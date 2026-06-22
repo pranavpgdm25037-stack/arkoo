@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // Point directly to our backend endpoint. 
       // Using a relative path makes it portable across local development, local tunnels, and production servers.
-      const apiEndpoint = 'http://localhost:3002/api/lms/leads/ingest';
+      const apiEndpoint = 'https://arkoo-u8sx.onrender.com/api/lms/leads/ingest';
 
       // Formulate asymmetric async POST transaction to the ingestion system
       const response = await fetch(apiEndpoint, {

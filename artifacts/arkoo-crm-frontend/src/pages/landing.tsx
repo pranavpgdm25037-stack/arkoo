@@ -88,7 +88,7 @@ export default function LandingPage() {
 
     try {
       // Point to relative API endpoint since both run on same domain/port in production
-      const apiEndpoint = '/api/lms/leads/ingest';
+      const apiEndpoint = 'https://arkoo-u8sx.onrender.com/api/lms/leads/ingest';
       
       const response = await fetch(apiEndpoint, {
         method: 'POST',
