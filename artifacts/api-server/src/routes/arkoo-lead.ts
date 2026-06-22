@@ -153,18 +153,8 @@ function parseRequirements(requirements: string) {
 // Priority: APP_BASE_URL env > X-Forwarded-Host (ngrok/proxy) > Host header
 // ============================================================
 function detectBaseUrl(req: any): string {
-  // 1. Env var takes highest priority (set this in production)
-  if (process.env.APP_BASE_URL) return process.env.APP_BASE_URL.replace(/\/$/, "");
-
-  // 2. Reverse-proxy / ngrok injects the public host here
-  const forwardedHost = req?.headers?.["x-forwarded-host"];
-  const forwardedProto = req?.headers?.["x-forwarded-proto"] || "https";
-  if (forwardedHost) return `${forwardedProto}://${forwardedHost}`;
-
-  // 3. Fall back to the Host header of the API server (localhost in dev)
-  const host = req?.headers?.["host"] || "localhost:3000";
-  const proto = req?.secure ? "https" : "http";
-  return `${proto}://${host}`;
+  // Always use the live frontend URL in production
+  return process.env.APP_BASE_URL || "https://ubiquitous-fox-d6f702.netlify.app";
 }
 
 // ============================================================

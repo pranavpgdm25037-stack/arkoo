@@ -31,7 +31,7 @@ async function sendCustomerEmail(customerName, emailAddress, leadId) {
     <p>To help our engineering design division perform a feasibility assessment and create a preliminary custom design layout for your project, we require a few detailed technical parameters.</p>
     <p>Please click the button below to fill out our <strong>Detailed Project Specification Form</strong>:</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${process.env.APP_BASE_URL || 'http://localhost:5173'}/apply" style="background: #f59e0b; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(245,158,11,0.2);">Provide Technical Specifications</a>
+      <a href="${process.env.APP_BASE_URL || 'https://ubiquitous-fox-d6f702.netlify.app'}/apply" style="background: #f59e0b; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(245,158,11,0.2);">Provide Technical Specifications</a>
     </div>
   </div>
   `;

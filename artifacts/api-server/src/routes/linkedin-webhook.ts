@@ -248,7 +248,7 @@ router.post("/webhooks/linkedin", async (req: Request, res: Response) => {
       if (customerName && (phoneNumber || emailAddress)) {
         try {
           const ingestRes = await fetch(
-            `http://localhost:${process.env.PORT || 3002}/api/webhooks/arkoo-lead`,
+            `https://arkoo-u8sx.onrender.com/api/webhooks/arkoo-lead`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

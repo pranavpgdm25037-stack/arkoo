@@ -176,7 +176,7 @@ router.get("/webhooks/meta/retrieve-lead", async (req: Request, res: Response) =
       metaLeadgenId: leadgen_id,
     };
 
-    const ingestRes = await fetch(`http://localhost:${process.env.PORT || 3002}/api/webhooks/arkoo-lead`, {
+    const ingestRes = await fetch(`https://arkoo-u8sx.onrender.com/api/webhooks/arkoo-lead`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(internalPayload),
