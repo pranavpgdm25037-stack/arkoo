@@ -1,6 +1,6 @@
 async function run() {
   try {
-    const r = await fetch('https://arkoo.onrender.com/api/lms/leads/ingest', { 
+    const r = await fetch('https://arkoo-u8sx.onrender.com/api/lms/leads/ingest', { 
       method: 'POST', 
       headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify({ 

@@ -171,8 +171,8 @@ export default function Settings() {
                   
                   <div className="mt-auto space-y-2.5">
                     <div className="bg-muted p-2 rounded-lg text-[10px] font-mono select-all flex justify-between items-center border">
-                      <span className="truncate mr-2">https://arkoo-infra.onrender.com/api/webhooks/arkoo-lead</span>
-                      <Button onClick={() => handleCopy("https://arkoo-infra.onrender.com/api/webhooks/arkoo-lead", "linkedin")} size="icon" variant="ghost" className="h-6 w-6 cursor-pointer">
+                      <span className="truncate mr-2">https://arkoo-u8sx.onrender.com/api/webhooks/arkoo-lead</span>
+                      <Button onClick={() => handleCopy("https://arkoo-u8sx.onrender.com/api/webhooks/arkoo-lead", "linkedin")} size="icon" variant="ghost" className="h-6 w-6 cursor-pointer">
                         {copied === "linkedin" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                       </Button>
                     </div>
@@ -199,8 +199,8 @@ export default function Settings() {
                   
                   <div className="mt-auto space-y-2.5">
                     <div className="bg-muted p-2 rounded-lg text-[10px] font-mono select-all flex justify-between items-center border">
-                      <span className="truncate mr-2">https://arkoo-infra.onrender.com/api/webhooks/arkoo-lead</span>
-                      <Button onClick={() => handleCopy("https://arkoo-infra.onrender.com/api/webhooks/arkoo-lead", "instagram")} size="icon" variant="ghost" className="h-6 w-6 cursor-pointer">
+                      <span className="truncate mr-2">https://arkoo-u8sx.onrender.com/api/webhooks/arkoo-lead</span>
+                      <Button onClick={() => handleCopy("https://arkoo-u8sx.onrender.com/api/webhooks/arkoo-lead", "instagram")} size="icon" variant="ghost" className="h-6 w-6 cursor-pointer">
                         {copied === "instagram" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                       </Button>
                     </div>

@@ -41,7 +41,7 @@ const router = Router();
 const LINKEDIN_CLIENT_ID     = process.env.LINKEDIN_CLIENT_ID     || "";
 const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || "";
 const LINKEDIN_WEBHOOK_SECRET = process.env.LINKEDIN_WEBHOOK_SECRET || "arkoo_linkedin_secret_2026";
-const LINKEDIN_REDIRECT_URI  = process.env.LINKEDIN_REDIRECT_URI  || "https://arkoo-infra.onrender.com/api/webhooks/linkedin/callback";
+const LINKEDIN_REDIRECT_URI  = process.env.LINKEDIN_REDIRECT_URI  || "https://arkoo-u8sx.onrender.com/api/webhooks/linkedin/callback";
 
 const LEDGER_PATH = path.resolve(process.cwd(), "../../arkoo_leads.json");
 
@@ -300,10 +300,10 @@ router.get("/webhooks/linkedin/status", async (req: Request, res: Response) => {
         "4. Call GET /api/webhooks/linkedin/auth-url → open URL in browser → authorize",
         "5. LinkedIn redirects to /api/webhooks/linkedin/callback → access token auto-saved",
         "6. Register webhook at https://developers.linkedin.com → Webhooks → Add Webhook",
-        `   Webhook URL: https://arkoo-infra.onrender.com/api/webhooks/linkedin`,
+        `   Webhook URL: https://arkoo-u8sx.onrender.com/api/webhooks/linkedin`,
         "7. LinkedIn will POST a challenge here → auto-verified",
       ],
-      webhookUrl: "https://arkoo-infra.onrender.com/api/webhooks/linkedin",
+      webhookUrl: "https://arkoo-u8sx.onrender.com/api/webhooks/linkedin",
     });
   }
 
@@ -324,7 +324,7 @@ router.get("/webhooks/linkedin/status", async (req: Request, res: Response) => {
     return res.status(200).json({
       status: "CONFIGURED",
       linkedInWebhooks: liData,
-      webhookUrl: "https://arkoo-infra.onrender.com/api/webhooks/linkedin",
+      webhookUrl: "https://arkoo-u8sx.onrender.com/api/webhooks/linkedin",
     });
   } catch (err: any) {
     return res.status(500).json({ error: "Could not fetch LinkedIn webhook status", details: err.message });
