@@ -1,0 +1,11 @@
+{
+  "name": "arkoo-landing-page",
+  "version": "1.0.0",
+  "description": "Arkoo Prebuild Landing Page",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}

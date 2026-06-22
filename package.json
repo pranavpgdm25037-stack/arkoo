@@ -1,0 +1,29 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node start_all.js && pnpm -r --parallel run dev",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "heroku-postbuild": "pnpm --filter @workspace/api-server build",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+  },
+  "private": true,
+  "devDependencies": {
+    "pdf-parse": "^2.4.5",
+    "prettier": "^3.8.3",
+    "typescript": "~5.9.3",
+    "xlsx": "^0.18.5"
+  },
+  "dependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/multer": "^2.1.0",
+    "@xmldom/xmldom": "^0.9.10",
+    "adm-zip": "^0.5.17",
+    "dotenv": "^17.4.2",
+    "multer": "^2.1.1",
+    "nodemailer": "^8.0.7",
+    "pdfkit": "^0.18.0"
+  }
+}

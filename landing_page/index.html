@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arkoo Prebuild | Enterprise PEB Quotation & Technical Enquiry</title>
+  <meta name="description" content="Request a technical feasibility assessment and premium Pre-Engineered Building (PEB) proposal from Arkoo Prebuild. Fast lead ingestion and custom designs.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .tech-metric,
+    .header-badge {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Grid Overlays -->
+  <div class="industrial-bg-grid"></div>
+  <div class="glow-sphere orange-glow"></div>
+  <div class="glow-sphere blue-glow"></div>
+
+  <!-- Futuristic Cyber-Industrial Connected Data Nodes & Rays (Image 1 Style) -->
+  <div class="network-nodes-bg">
+    <!-- SVG containing curving lines and tech nodes -->
+    <svg class="nodes-svg" viewBox="0 0 1200 800" fill="none" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Curved connector lines -->
+      <path d="M50 150 Q 200 80 450 220 T 800 150" stroke="rgba(255,255,255,0.06)" stroke-width="1.2" fill="none" />
+      <path d="M950 120 Q 1100 280 1150 480" stroke="rgba(255,255,255,0.06)" stroke-width="1.2" fill="none" />
+      <path d="M100 580 Q 250 620 400 520 T 700 680" stroke="rgba(255,255,255,0.06)" stroke-width="1.2" fill="none" />
+      <path d="M800 680 Q 980 580 1120 620" stroke="rgba(255,255,255,0.06)" stroke-width="1.2" fill="none" />
+      
+      <!-- Connecting nodes -->
+      <path d="M450 220 L 700 680" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="3 3" fill="none" />
+      <path d="M800 150 L 950 120" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="3 3" fill="none" />
+      
+      <!-- Glowing active coordinate nodes -->
+      <circle cx="450" cy="220" r="4" class="pulse-node" />
+      <circle cx="800" cy="150" r="3" class="pulse-node-slow" />
+      <circle cx="950" cy="120" r="4" class="pulse-node" />
+      <circle cx="400" cy="520" r="3" class="pulse-node-slow" />
+      <circle cx="800" cy="680" r="4" class="pulse-node" />
+    </svg>
+    
+    <!-- Floating Tech Metrics (Matching Cortex, Quant, Aelf, Meeton style) -->
+    <div class="tech-metric metric-top-left">
+      <span class="metric-dot amber"></span>
+      <div class="metric-info">
+        <span class="metric-name">PEB Engine</span>
+        <span class="metric-val">20.945</span>
+      </div>
+    </div>
+    
+    <div class="tech-metric metric-top-right">
+      <span class="metric-dot blue"></span>
+      <div class="metric-info">
+        <span class="metric-name">LMS Ingest</span>
+        <span class="metric-val">2.945</span>
+      </div>
+    </div>
+    
+    <div class="tech-metric metric-bottom-left">
+      <span class="metric-dot blue"></span>
+      <div class="metric-info">
+        <span class="metric-name">BIM Analysis</span>
+        <span class="metric-val">19.346</span>
+      </div>
+    </div>
+    
+    <div class="tech-metric metric-bottom-right">
+      <span class="metric-dot amber"></span>
+      <div class="metric-info">
+        <span class="metric-name">Telemetry</span>
+        <span class="metric-val">440</span>
+      </div>
+    </div>
+
+    <!-- Vertical Data Light Beams -->
+    <div class="light-beams">
+      <div class="beam beam-1"></div>
+      <div class="beam beam-2"></div>
+      <div class="beam beam-3"></div>
+      <div class="beam beam-4"></div>
+    </div>
+  </div>
+
+  <main class="page-container">
+    <header class="main-header">
+      <div class="logo-area">
+        <!-- SVG Logo: Heavy industrial gear/beams and 'Arkoo' design -->
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="var(--color-amber)" />
+          <path d="M2 17L12 22L22 17" stroke="var(--color-amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M2 12L12 17L22 12" stroke="var(--color-slate-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <div class="brand-text">
+          <span class="brand-main">ARKOO</span>
+          <span class="brand-sub">PREBUILD</span>
+        </div>
+      </div>
+      <div class="header-badge">
+        <span class="badge-dot"></span>
+        <span class="badge-label">Enterprise Lead Ingestion V2</span>
+      </div>
+    </header>
+
+    <section class="hero-section">
+      <h1 class="hero-title">High-Performance Pre-Engineered Buildings</h1>
+      <p class="hero-subtitle">
+        Accelerate your industrial deployment. Submit your project requirements to receive a comprehensive PEB structural layout, feasibility assessment, and technical cost proposal from Arkoo Prebuild's engineering division.
+      </p>
+    </section>
+
+    <!-- Enquiry Card Container -->
+    <article class="enquiry-card">
+      <div class="card-header">
+        <div class="card-title-row">
+          <h2 class="card-title">Technical Project Specification Form</h2>
+          <span class="progress-text" id="progress-meter">0% Completed</span>
+        </div>
+        <p class="card-desc">Please complete all fields to transmit your query directly to our sales engineering gateway.</p>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="form-progress"></div>
+        </div>
+      </div>
+
+      <!-- Main Semantic Form with native bubbles disabled (novalidate) for beautiful custom styling -->
+      <form id="peb-enquiry-form" novalidate autocomplete="off">
+        
+        <!-- SECTION 1: Contact Profile -->
+        <fieldset class="form-section">
+          <legend class="section-legend">
+            <span class="legend-number">01</span>
+            <span class="legend-text">Contact Profile</span>
+          </legend>
+          
+          <div class="form-grid-2col">
+            <!-- Name -->
+            <div class="form-group" id="group-name">
+              <label for="contact-name" class="form-label">
+                Full Name <span class="required-indicator">*</span>
+              </label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </span>
+                <input 
+                  type="text" 
+                  id="contact-name" 
+                  name="name" 
+                  class="form-control" 
+                  placeholder="Enter your first & last name" 
+                  required 
+                  minlength="2"
+                >
+              </div>
+              <div class="error-message" id="error-contact-name">
+                Please enter your full name (minimum 2 characters).
+              </div>
+            </div>
+
+            <!-- Contact Number -->
+            <div class="form-group" id="group-phone">
+              <label for="contact-phone" class="form-label">
+                Contact Number <span class="required-indicator">*</span>
+              </label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </span>
+                <input 
+                  type="tel" 
+                  id="contact-phone" 
+                  name="phone" 
+                  class="form-control" 
+                  placeholder="Enter digits (e.g. +1234567890)" 
+                  required 
+                  pattern="^\+?[0-9]{10,15}$"
+                >
+              </div>
+              <div class="error-message" id="error-contact-phone">
+                Please enter a valid phone number (10 to 15 digits, digits only, optional '+' prefix).
+              </div>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="form-group" id="group-email">
+            <label for="contact-email" class="form-label">
+              Corporate Email <span class="required-indicator">*</span>
+            </label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </span>
+              <input 
+                type="email" 
+                id="contact-email" 
+                name="email" 
+                class="form-control" 
+                placeholder="you@company.com" 
+                required
+              >
+            </div>
+            <div class="error-message" id="error-contact-email">
+              Please enter a valid corporate email address.
+            </div>
+          </div>
+
+        </fieldset>
+
+        <!-- SECTION 2: Project Details -->
+        <fieldset class="form-section">
+          <legend class="section-legend">
+            <span class="legend-number">02</span>
+            <span class="legend-text">Project Details</span>
+          </legend>
+          
+          <div class="form-grid-2col">
+            <!-- Project Type Selection -->
+            <div class="form-group" id="group-project-type">
+              <label for="project-type" class="form-label">
+                Project Type <span class="required-indicator">*</span>
+              </label>
+              <div class="select-wrapper">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"></path><path d="M4 10V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6"></path><path d="M12 4v16"></path></svg>
+                </span>
+                <select id="project-type" name="projectType" class="form-control select-control" required>
+                  <option value="" disabled>Select project type...</option>
+                  <option value="PEB Structure" selected>PEB Structure (Standard)</option>
+                  <option value="PEB Warehouse">PEB Warehouse</option>
+                  <option value="Industrial Shed">Industrial Shed</option>
+                  <option value="Commercial Space">Commercial Space</option>
+                  <option value="Interior Design">Interior Design</option>
+                  <option value="Other">Other (Write on own)</option>
+                </select>
+                <span class="select-arrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </span>
+              </div>
+              <div class="error-message" id="error-project-type">
+                Please select a project type.
+              </div>
+            </div>
+
+            <!-- Custom Project Type (Hidden by default) -->
+            <div class="form-group" id="group-custom-project-type" style="display: none; grid-column: 1 / -1;">
+              <label for="custom-project-type" class="form-label">
+                Custom Project Type <span class="required-indicator">*</span>
+              </label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                </span>
+                <input 
+                  type="text" 
+                  id="custom-project-type" 
+                  name="customProjectType" 
+                  class="form-control" 
+                  placeholder="Enter your custom project type" 
+                  minlength="3"
+                >
+              </div>
+              <div class="error-message" id="error-custom-project-type">
+                Please enter your custom project type (minimum 3 characters).
+              </div>
+            </div>
+
+            <!-- Project Location -->
+            <div class="form-group" id="group-project-location">
+              <label for="project-location" class="form-label">
+                Project Location <span class="required-indicator">*</span>
+              </label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                </span>
+                <input 
+                  type="text" 
+                  id="project-location" 
+                  name="projectLocation" 
+                  class="form-control" 
+                  placeholder="E.g. Pune, Goa, Nagpur" 
+                  required 
+                  minlength="2"
+                >
+              </div>
+              <div class="error-message" id="error-project-location">
+                Please enter the project location (minimum 2 characters).
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid-2col" style="margin-top: 1.5rem;">
+            <!-- Project Area -->
+            <div class="form-group" id="group-project-area">
+              <label for="project-area" class="form-label">
+                Project Area (Sq. Ft.) <span class="required-indicator">*</span>
+              </label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+                </span>
+                <input 
+                  type="number" 
+                  id="project-area" 
+                  name="projectAreaSqft" 
+                  class="form-control" 
+                  placeholder="E.g. 5000" 
+                  required 
+                  min="1"
+                >
+              </div>
+              <div class="error-message" id="error-project-area">
+                Please enter a valid positive project area in square feet.
+              </div>
+            </div>
+
+            <!-- Project Budget -->
+            <div class="form-group" id="group-project-budget">
+              <label for="project-budget" class="form-label">
+                Project Budget <span class="required-indicator">*</span>
+              </label>
+              <div class="select-wrapper">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </span>
+                <select id="project-budget" name="estimatedBudget" class="form-control select-control" required>
+                  <option value="" disabled selected>Select budget range...</option>
+                  <option value="Under 15 Lakhs">Under 15 Lakhs</option>
+                  <option value="15 - 30 Lakhs">15 - 30 Lakhs</option>
+                  <option value="30 - 50 Lakhs">30 - 50 Lakhs</option>
+                  <option value="50 Lakhs - 1 Crore">50 Lakhs - 1 Crore</option>
+                  <option value="1 - 2 Crores">1 - 2 Crores</option>
+                  <option value="Above 2 Crores">Above 2 Crores</option>
+                </select>
+                <span class="select-arrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </span>
+              </div>
+              <div class="error-message" id="error-project-budget">
+                Please select a project budget range.
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid-2col" style="margin-top: 1.5rem;">
+            <!-- Completion Time of project -->
+            <div class="form-group" id="group-project-timeline">
+              <label for="project-timeline" class="form-label">
+                Completion Time of Project <span class="required-indicator">*</span>
+              </label>
+              <div class="select-wrapper">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </span>
+                <select id="project-timeline" name="completionTimeline" class="form-control select-control" required>
+                  <option value="" disabled selected>Select completion time...</option>
+                  <option value="Immediate / Urgent">Immediate / Urgent</option>
+                  <option value="1 - 3 Months">1 - 3 Months</option>
+                  <option value="3 - 6 Months">3 - 6 Months</option>
+                  <option value="6+ Months">6+ Months</option>
+                </select>
+                <span class="select-arrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </span>
+              </div>
+              <div class="error-message" id="error-project-timeline">
+                Please select an expected completion timeline.
+              </div>
+            </div>
+
+            <!-- Additional Details / Comments -->
+            <div class="form-group" id="group-requirements">
+              <label for="project-requirements" class="form-label">
+                Additional Details / Comments
+              </label>
+              <div class="input-wrapper">
+                <textarea 
+                  id="project-requirements" 
+                  name="requirements" 
+                  class="form-control" 
+                  placeholder="Mention any custom specifications, e.g. double height, crane, mezzanine, etc. (optional)" 
+                  rows="4"
+                  style="resize: vertical; min-height: 48px; padding-top: 12px; padding-left: 15px; height: 3rem;"
+                ></textarea>
+              </div>
+              <div class="error-message" id="error-project-requirements">
+                Please provide valid details (minimum 5 characters if filled).
+              </div>
+            </div>
+          </div>
+
+        </fieldset>
+
+        <!-- Status/Alert Notification Block -->
+        <div id="notification-banner" class="notification-banner" role="alert" aria-live="polite">
+          <div class="notification-content">
+            <svg class="notification-icon animate-spin" id="icon-loading" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity: 0.25;"></circle>
+              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <svg class="notification-icon" id="icon-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <svg class="notification-icon" id="icon-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="15" y1="9" x2="9" y2="15"></line>
+              <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+            <span class="notification-text" id="notification-text">Processing form submission...</span>
+          </div>
+        </div>
+
+        <!-- Primary Action Button -->
+        <button type="submit" id="submit-btn" class="submit-button">
+          <span class="btn-text">Submit Enquiry & Request Quote</span>
+          <span class="btn-shine"></span>
+        </button>
+
+      </form>
+    </article>
+
+    <footer class="main-footer">
+      <p>© 2026 Arkoo Prebuild. All technical schematics & industrial design processes are proprietary trademarks.</p>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

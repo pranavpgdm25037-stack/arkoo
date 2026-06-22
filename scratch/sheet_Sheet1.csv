@@ -1,0 +1,172 @@
+,,,
+,PROJECT INFORMATION FORM (PIF),,
+QRF NO - ____,,,Type of Industries - Fabrication
+Client Name -,Mr. Sudhir Shinde,,Project Name : Rishi Vashi
+Job No -,1831,,RFQ
+Department - ,,,PIF REV-R0
+,,,
+( Building-1) Building Parameters Details,,,
+Sl.no,Description,,Details
+1,Building Type,,"MS-2, & Mono Slope"
+2,Width (m),,40 m (C/C) &80 m (C/C)
+3,Length(m),,80 m (C/C) &20 m (C/C)
+4,Clear height (m),,8.5 m & 13 m
+5,Width Module,,2 @ 15 m & 1@ 10 m And 10 @ 8 m
+6,Roof Slope,,01:10 & 5.671 degree
+7,Side Wall Column  spacing (m) ( C/C) ,,10@ 8 m & 1@20 m
+8,End Wall Col Spacing ( C/C) ,,2 @ 15 m & 1@ 10 m And 10 @ 8 m
+9,"Wind Bracing at Roof, Wall & Intermediate column lines",,Considered
+10,Type Of gutter ,,"Eave Gutter 160 m, valley gutter 80 m"
+12,Eave Condition,,Both side and also in the middle of 2 Buildings
+13,Downtake Pipe,,PPGI
+14,Welding,,As per AWS standards followed by Arkoo Pre-Build Pvt Ltd.
+15,Brick wall,,NA
+,,,
+Lean to,,,
+1,Lean to,,NA
+2,Lean to height from Front right side ,,NA
+4,Lean to height from back side ,,NA
+,,,
+Design Loads Details,,,
+Sl.no,Description,,Details
+1,Building design & serviceability as per,,"AISC 360-10, AISI-2002"
+2,Dead Load,,
+3,Live Load,,
+4,Collateral Load,,
+5,Basic Wind Speed,,
+6,Seismic Zone,,
+7,Welding Standards,,AWS D1 :1:2015
+8,Load Combination,,MBMA-2016
+9,Deflection limit,,"Horizontal H/200, Vertical L/180, Purlins H/180"
+10,Site locations,,
+11,Fire fighting Load,,Not Considered
+12,Electrical Cable Trey,,Not Considered
+13,Mezzanine Floor live Load ,,Not Considered
+14,Lightening arrester,,NA
+15,Cable trey Ladder,,Not Considered
+,,,
+Wall Conditions Details,,,
+Sl.no,Description,,Details
+1,Front Right Side Wall,,NA
+2,Front left Side Wall,,NA
+3,Front End Wall,,NA
+4,Back End Wall,,NA
+,,,
+Roof & Wall Sheeting,,,
+Sl.no,Description,,Details
+1,Roof sheet External,,Single skin - 0.50 MM PPGI Roof Sheet
+2,Wall Sheet External,,Single skin - 0.50 MM PPGI Roof Sheet
+3,Wall Liner,,NA
+4,Partition Wall,,NA
+5,Roof & Wall Color Details,,Not confirmed
+6,All the Flashing & Downtake Pipes Color,,Not confirmed
+,,,
+Accessories Details,,,
+Sl.no,Description,,Details
+1,Roof Sky lights 2 mm thick Poly carbonate,,141 sqm (3 x 1) roof and wall
+2,600 Turbo vents,,N/A
+3,Galvalume Fixed Louvers with GI Mesh,,N/A
+4,Framed Opening,,6 openings 4.5 m x 6 m both sides front and back
+5,Roof Monitor,,Considered for MS-2 throughout
+6,Insulation in roof,,48 kg/m3 in 4800 Sqm
+6,Insulation in wall,,NA
+7,Fixed Louvers,,280 RMT peripheri 
+8,Cage Ladder,,3 nos considered
+9,Cable Tray Support Structure,,Not considered
+10,"Life Line ( Karam , MT & T Or Equivilant) ( Out sourced / In House)",,Not considered
+11,Continuous Strut Pipe,,NA
+,,,
+Canopy Details (Please refer drawing for numbers and width of canopy),,,
+Sl.no,Description,,Details
+1,Location,,Front gable end
+2,Width (m),,4 meter
+3,Length (m),,60 Meter
+4,Clear height (m),,3.5 m
+5,Canopy roof panel,,Considerd
+6,Soffit panel,,Single skin - 0.50 MM PPGI Soffit Sheet
+7,Eave Condition,,GI gutter
+7,Kicker Support,,Considered
+,,,
+Framed Opening Details,,,
+Sl.no,Description,,Details
+1,Location,,Front gable end
+2,Frame Opening Size,,3 @ Front Gable (4.5 m x 6 m) 3 @ Back gable
+,,,
+Surface Preparation Details,,,
+Sl.no,Description,,Details
+1,Primary,,Fy 345 mpa
+,Sand blasting required or not,,YES 
+2,Secondary,,Fy 345 mpa
+,Pre-Galvanised required or not,,YES 
+,,,
+Painting Details,,,
+Sl.no,Description,,Details
+1,"Primary, Hot rolled, Tube",,1 Coat of epoxy primer and 35 DFT 2 coats of paint  100-120 DFT in total
+,Any special painting Make,,As per APBPL Standard
+2,Valley gutter,,GI
+3,Secondary,,As per APBPL Standard
+4,Sag rod,,Galvanized
+5,Connection bolts,,8.8 grade 
+,Any special painting if secondaries not pre-galvanised,,NA
+,,,
+Crane Details,,,
+Sl.no,Description,,Details
+1,Nos of Crane,,MS-2 (2 nos. of 5 MT & 6 nos of 2 MT) & Mono Slope (1 no. of 20 MT & 1 no. Of 15 MT)
+2,Capacity of Crane,,MS-2 (2 nos. of 5 MT & 6 nos of 2 MT) & Mono Slope (1 no. of 20 MT & 1 no. Of 15 MT)
+3,Run,,80 m
+4,Type of Crane,,EOT
+5,Hook Height,,MS-2-6m & for Mono 10.5
+6,Crane Data,,NA
+7,Crane Walk way,,NA
+8,Crane Operations,,NA
+9,Note,,NA
+,,,
+Mezzanine Floor Details,,,
+Sl.no,Description,,Detail
+1,Mezzanine Area,,NA
+2,Mezzanine Column Spacing,,NA
+3,Height,,NA
+4,Live Load,,NA
+5,Dead Load,,NA
+6,Mezzanine Beam Depth,,NA
+7,Staircase and Handrails,,NA
+8,Handrails on Mezzanine,,NA
+9,Checkered Plate,,NA
+9,Deck Sheet,,NA
+,,,
+Commited Schedule Details,,,
+Sl.no,Description,,Details
+1,LOI /PO,,
+2,Coloumn Reaction,,
+3,STAAD Approvals,,
+4,AB Submission,,
+5,AB Approvals,,
+6,GA Submission,,
+7,GA Approvals,,
+8,Supply Start,,
+9,Structure Installation Start,,
+10,Structure Installation Completion ,,
+11,Roof Sheeting Start,,
+12,Roof Sheeting Completion,,
+13,Wall Sheet Start,,
+14,Wall Sheet Completion,,
+15,leanto structure start ,,
+16,leanto structure completion ,,
+17,lean to fitting and gutter fixing start,,
+18,lean to fitting and gutter fixing completion ,,
+19,virtual ,,
+20,Handing Over,,
+,LD Clause,,
+,,,
+Special Notes - For Design,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+Marketing  Person,,,Approved By
+,,,

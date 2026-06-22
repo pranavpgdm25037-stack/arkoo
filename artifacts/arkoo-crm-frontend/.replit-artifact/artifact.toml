@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Arkoo CRM"
+version = "1.0.0"
+id = "artifacts/arkoo-crm-frontend"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24689
+
+[services.development]
+run = "pnpm --filter @workspace/arkoo-crm-frontend run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/arkoo-crm-frontend", "run", "build" ]
+publicDir = "artifacts/arkoo-crm-frontend/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24689"
+BASE_PATH = "/"
