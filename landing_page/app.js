@@ -261,6 +261,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clear previous alert states
     hideNotification();
 
+    // Force await email validation if not yet complete
+    if (emailField && emailField.value.trim() !== '' && (emailValidationState === 'idle' || emailValidationState === 'loading')) {
+      submitBtn.disabled = true;
+      submitBtnText.textContent = 'Verifying...';
+      await validateEmailOnServer(emailField.value.trim());
+      submitBtn.disabled = false;
+      submitBtnText.textContent = 'Submit Enquiry & Request Quote';
+    }
+
     // Loop through all validation items
     let formIsValid = true;
     fields.forEach(field => {
@@ -270,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    if (emailValidationState === 'invalid' || emailValidationState === 'loading') {
+    if (emailValidationState === 'invalid') {
        formIsValid = false;
     }
 
