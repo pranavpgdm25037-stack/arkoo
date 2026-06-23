@@ -39,19 +39,19 @@ const PROJECT_TYPES = [
 ];
 
 const BUDGET_RANGES = [
-  "Under 10 Lakhs",
-  "10 – 25 Lakhs",
-  "25 – 50 Lakhs",
-  "50 Lakhs – 1 Crore",
-  "Above 1 Crore",
+  "Under 15 Lakhs",
+  "15 - 30 Lakhs",
+  "30 - 50 Lakhs",
+  "50 Lakhs - 1 Crore",
+  "1 - 2 Crores",
+  "Above 2 Crores",
 ];
 
 const TIMELINES = [
-  "Immediate (ASAP)",
-  "Within 1 Month",
-  "1 – 3 Months",
-  "3 – 6 Months",
-  "6 – 12 Months",
+  "Immediate / Urgent",
+  "1 - 3 Months",
+  "3 - 6 Months",
+  "6+ Months",
   "Exploring / Not Sure",
 ];
 
@@ -310,13 +310,23 @@ export default function ApplyPage() {
       const nameParam = params.get("name") || "";
       const emailParam = params.get("email") || "";
       const phoneParam = params.get("phone") || "";
+      const locParam = params.get("loc") || "";
+      const ptypeParam = params.get("ptype") || "";
+      const areaParam = params.get("area") || "";
+      const budgetParam = params.get("budget") || "";
+      const timelineParam = params.get("timeline") || "";
 
-      if (nameParam || emailParam || phoneParam) {
+      if (nameParam || emailParam || phoneParam || locParam) {
         setForm(prev => ({
           ...prev,
-          fullname: nameParam,
-          emailaddress: emailParam,
-          phonenumber: phoneParam,
+          fullname: nameParam || prev.fullname,
+          emailaddress: emailParam || prev.emailaddress,
+          phonenumber: phoneParam || prev.phonenumber,
+          projectlocation: locParam || prev.projectlocation,
+          projecttype: ptypeParam || prev.projecttype,
+          proposedarea: areaParam || prev.proposedarea,
+          estimatedbudget: budgetParam || prev.estimatedbudget,
+          completiontimeline: timelineParam || prev.completiontimeline,
         }));
       }
     }

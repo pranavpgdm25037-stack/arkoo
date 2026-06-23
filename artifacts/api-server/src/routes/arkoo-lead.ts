@@ -179,14 +179,24 @@ function detectBaseUrl(req: any): string {
 // ============================================================
 // CUSTOMER DETAILED FORM EMAIL OUTBOX HANDLER
 // ============================================================
-async function sendCustomerEmail(customerName: string, emailAddress: string, phoneNumber: string, leadId: string, baseUrl: string): Promise<string | null> {
+async function sendCustomerEmail(customerName: string, emailAddress: string, phoneNumber: string, leadId: string, baseUrl: string, extraData?: any): Promise<string | null> {
   if (!emailAddress) return null;
   
-  const queryParams = new URLSearchParams({
+  const queryObj: any = {
     name: customerName,
     email: emailAddress,
     phone: phoneNumber || ""
-  }).toString();
+  };
+
+  if (extraData) {
+    if (extraData.projectlocation && extraData.projectlocation !== 'Not Specified') queryObj.loc = extraData.projectlocation;
+    if (extraData.projecttype && extraData.projecttype !== 'PEB Structure') queryObj.ptype = extraData.projecttype;
+    if (extraData.proposedarea && extraData.proposedarea > 0) queryObj.area = extraData.proposedarea;
+    if (extraData.estimatedbudget && extraData.estimatedbudget !== '0' && extraData.estimatedbudget !== 'Not Specified') queryObj.budget = extraData.estimatedbudget;
+    if (extraData.completiontimeline && extraData.completiontimeline !== 'Not Specified') queryObj.timeline = extraData.completiontimeline;
+  }
+
+  const queryParams = new URLSearchParams(queryObj).toString();
   const formUrl = `${baseUrl}/apply?${queryParams}`;
 
   const textContent = `Hi ${customerName},
@@ -534,7 +544,20 @@ const handleArkooLead = async (req: any, res: any) => {
       console.log("Email sent successfully:", info.messageId);
 
       // Trigger email dispatch to the Customer with the Detailed PIF Form Link
-      customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, phoneNumber, ledgerEntry.id, detectBaseUrl(req));
+      customerPreviewUrl = await sendCustomerEmail(
+        customerName, 
+        emailAddress, 
+        phoneNumber, 
+        ledgerEntry.id, 
+        detectBaseUrl(req),
+        {
+          projectlocation: projectLocation,
+          projecttype: projectType,
+          proposedarea: projectAreaSqft,
+          estimatedbudget: estimatedBudget,
+          completiontimeline: completionTimeline
+        }
+      );
 
       if (leadId && isLandingLead) {
         await db.update(leadsTable).set({ status: "Form Pending" }).where(eq(leadsTable.id, leadId));
