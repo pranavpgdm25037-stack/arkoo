@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Send, Loader2, Building2, User, MapPin, Ruler, Wallet, Clock, FileText, AlertCircle } from "lucide-react";
 
@@ -82,7 +82,7 @@ function validate(data: FormData): FieldError {
   if (!data.fullname.trim()) errors.fullname = "Full name is required.";
   if (!data.emailaddress.trim()) {
     errors.emailaddress = "Email address is required.";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.emailaddress)) {
+  } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(data.emailaddress)) {
     errors.emailaddress = "Please enter a valid email address.";
   }
   if (!data.phonenumber.trim()) errors.phonenumber = "Phone number is required.";
@@ -140,25 +140,34 @@ function FieldWrapper({ error, children }: { error?: string; children: React.Rea
 }
 
 function TextInput({
-  id, name, value, onChange, placeholder, type = "text", error,
+  id, name, value, onChange, onBlur, placeholder, type = "text", error, rightElement
 }: {
   id: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string; type?: string; error?: string;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  placeholder?: string; type?: string; error?: string; rightElement?: React.ReactNode;
 }) {
   return (
     <FieldWrapper error={error}>
-      <input
+      <div className="relative">
+        <input
         id={id}
         name={name}
         type={type}
         value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        autoComplete="off"
-        className={`w-full px-4 py-2.5 rounded-xl bg-slate-800/70 border text-slate-100 placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 transition-all ${
-          error ? "border-rose-500/60" : "border-slate-700/60 hover:border-slate-600"
-        }`}
-      />
+          onChange={onChange}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          autoComplete="off"
+          className={`w-full px-4 py-2.5 rounded-xl bg-slate-800/70 border text-slate-100 placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 transition-all ${
+            error ? "border-rose-500/60" : "border-slate-700/60 hover:border-slate-600"
+          } ${rightElement ? "pr-24" : ""}`}
+        />
+        {rightElement && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+            {rightElement}
+          </div>
+        )}
+      </div>
     </FieldWrapper>
   );
 }
@@ -292,11 +301,70 @@ export default function ApplyPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const [emailValidationState, setEmailValidationState] = useState<'idle' | 'loading' | 'valid' | 'invalid'>('idle');
+  const [emailValidationMessage, setEmailValidationMessage] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const nameParam = params.get("name") || "";
+      const emailParam = params.get("email") || "";
+      const phoneParam = params.get("phone") || "";
+
+      if (nameParam || emailParam || phoneParam) {
+        setForm(prev => ({
+          ...prev,
+          fullname: nameParam,
+          emailaddress: emailParam,
+          phonenumber: phoneParam,
+        }));
+      }
+    }
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => { const next = { ...prev }; delete next[name]; return next; });
+    }
+    if (name === 'emailaddress') {
+      setEmailValidationState('idle');
+      setEmailValidationMessage('');
+    }
+  };
+
+  const handleEmailBlur = async () => {
+    const emailToVerify = form.emailaddress;
+    if (!emailToVerify) {
+      setEmailValidationState('idle');
+      return;
+    }
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(emailToVerify)) {
+      setEmailValidationState('invalid');
+      setEmailValidationMessage('Invalid format');
+      return;
+    }
+    
+    setEmailValidationState('loading');
+    try {
+      const response = await fetch('/api/email/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToVerify })
+      });
+      const data = await response.json();
+      if (data.valid) {
+        setEmailValidationState('valid');
+        setEmailValidationMessage('Verified ✓');
+      } else {
+        setEmailValidationState('invalid');
+        setEmailValidationMessage(data.error || 'Not available');
+      }
+    } catch (error) {
+      console.error('Email validation error:', error);
+      setEmailValidationState('valid');
+      setEmailValidationMessage('Verified ✓');
     }
   };
 
@@ -311,6 +379,10 @@ export default function ApplyPage() {
     e.preventDefault();
     setSubmitError(null);
     const validationErrors = validate(form);
+    if (emailValidationState === 'invalid') {
+      validationErrors.emailaddress = emailValidationMessage || "Please enter a valid corporate email address.";
+    }
+
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       const firstErrorEl = document.getElementById(Object.keys(validationErrors)[0]);
@@ -454,8 +526,21 @@ export default function ApplyPage() {
                             type="email"
                             value={form.emailaddress}
                             onChange={handleChange}
+                            onBlur={handleEmailBlur}
                             placeholder="you@example.com"
                             error={errors.emailaddress}
+                            rightElement={
+                              emailValidationState === 'loading' ? (
+                                <svg className="w-4 h-4 animate-spin text-amber-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" style={{ opacity: 0.25 }}></circle>
+                                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : emailValidationState === 'valid' ? (
+                                <span className="text-xs font-semibold text-emerald-400">{emailValidationMessage}</span>
+                              ) : emailValidationState === 'invalid' ? (
+                                <span className="text-xs font-semibold text-rose-400">Not Available</span>
+                              ) : null
+                            }
                           />
                         </div>
                         <div>

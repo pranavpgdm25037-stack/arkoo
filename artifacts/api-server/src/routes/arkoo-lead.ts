@@ -160,15 +160,22 @@ function detectBaseUrl(req: any): string {
 // ============================================================
 // CUSTOMER DETAILED FORM EMAIL OUTBOX HANDLER
 // ============================================================
-async function sendCustomerEmail(customerName: string, emailAddress: string, leadId: string, baseUrl: string): Promise<string | null> {
+async function sendCustomerEmail(customerName: string, emailAddress: string, phoneNumber: string, leadId: string, baseUrl: string): Promise<string | null> {
   if (!emailAddress) return null;
   
+  const queryParams = new URLSearchParams({
+    name: customerName,
+    email: emailAddress,
+    phone: phoneNumber || ""
+  }).toString();
+  const formUrl = `${baseUrl}/apply?${queryParams}`;
+
   const textContent = `Hi ${customerName},
 
 Thanks for reaching out to us at Arkoo Prebuild regarding your project. I received your enquiry and would love to help you get started on the layout designs.
 
 To help our engineering team draft a custom design layout and feasibility report for you, could you please take a minute to fill in your project specifications here?
-Open Project Specification Form: ${baseUrl}/apply
+Open Project Specification Form: ${formUrl}
 
 Please submit this at your earliest convenience so I can pass it to our drafting division.
 Let me know if you have any questions!
@@ -183,7 +190,7 @@ Arkoo Pre-Build Pvt. Ltd.`;
     <p>Thanks for reaching out to us at Arkoo Prebuild regarding your project. I received your enquiry and would love to help you get started on the layout designs.</p>
     <p>To help our engineering team draft a custom design layout and feasibility report for you, could you please take a minute to fill in your project specifications here?</p>
     <p style="margin: 20px 0;">
-      👉 <a href="${baseUrl}/apply" style="color: #1a0dab; font-weight: bold; text-decoration: underline; font-size: 16px;">Open Project Specification Form</a>
+      👉 <a href="${formUrl}" style="color: #1a0dab; font-weight: bold; text-decoration: underline; font-size: 16px;">Open Project Specification Form</a>
     </p>
     <p>Please submit this at your earliest convenience so I can pass it to our drafting division.</p>
     <p>Let me know if you have any questions!</p>
@@ -374,9 +381,9 @@ const handleArkooLead = async (req: any, res: any) => {
       projectLocation,
       projectAreaSqft,
       estimatedBudget,
-      aiScore: isLandingLead ? qualification.score : 0,
-      aiCategory: isLandingLead ? qualification.category : "PENDING",
-      status: isLandingLead ? "Form Filled" : "HOT LEAD (Awaiting Inputs)",
+      aiScore: isLandingLead ? 0 : qualification.score,
+      aiCategory: isLandingLead ? "PENDING" : qualification.category,
+      status: isLandingLead ? "New" : "HOT LEAD (Awaiting Inputs)",
       formSubmitted: isLandingLead,
       qualification: isLandingLead ? {
         totalScore: qualification.score,
@@ -415,9 +422,9 @@ const handleArkooLead = async (req: any, res: any) => {
       const [lead] = await db.insert(leadsTable).values({
         source: leadSource,
         rawData: data,
-        aiScore: isLandingLead ? qualification.score : 0,
-        aiCategory: isLandingLead ? qualification.category : "PENDING",
-        status: isLandingLead ? "Form Filled" : "Form Pending"
+        aiScore: isLandingLead ? 0 : qualification.score,
+        aiCategory: isLandingLead ? "PENDING" : qualification.category,
+        status: isLandingLead ? "New" : "Form Pending"
       }).returning();
 
       leadId = lead.id;
@@ -508,7 +515,12 @@ const handleArkooLead = async (req: any, res: any) => {
       console.log("Email sent successfully:", info.messageId);
 
       // Trigger email dispatch to the Customer with the Detailed PIF Form Link
-      customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, ledgerEntry.id, detectBaseUrl(req));
+      customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, phoneNumber, ledgerEntry.id, detectBaseUrl(req));
+
+      if (leadId && isLandingLead) {
+        await db.update(leadsTable).set({ status: "Form Pending" }).where(eq(leadsTable.id, leadId));
+        console.log(`[STATUS UPDATE] Automatically updated lead ID ${leadId} to 'Form Pending' after sending customer email.`);
+      }
 
     } catch (error: any) {
       console.error("Gmail Error:", error.message);
@@ -538,7 +550,12 @@ const handleArkooLead = async (req: any, res: any) => {
         console.log("Verification Email Sent! View here:", previewUrl);
 
         // Trigger Ethereal fallback for Customer email
-        customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, ledgerEntry.id, detectBaseUrl(req));
+        customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, phoneNumber, ledgerEntry.id, detectBaseUrl(req));
+
+        if (leadId && isLandingLead) {
+          await db.update(leadsTable).set({ status: "Form Pending" }).where(eq(leadsTable.id, leadId));
+          console.log(`[STATUS UPDATE] Automatically updated lead ID ${leadId} to 'Form Pending' after sending customer Ethereal email.`);
+        }
 
       } catch (fallbackError: any) {
         console.error("All email attempts failed:", fallbackError.message);

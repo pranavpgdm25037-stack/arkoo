@@ -9,6 +9,7 @@ import metaWebhookRouter from "./meta-webhook";
 import linkedInWebhookRouter from "./linkedin-webhook";
 import pifRouter from "./pif";
 import analyzeDrawingRouter from "./analyze-drawing";
+import { emailValidationRouter } from "./email-validation";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(metaWebhookRouter);    // Instagram / Meta Lead Ads
 router.use(linkedInWebhookRouter); // LinkedIn Lead Gen Forms
 router.use(pifRouter);
 router.use(analyzeDrawingRouter);
+router.use("/email", emailValidationRouter);
 
 export default router;

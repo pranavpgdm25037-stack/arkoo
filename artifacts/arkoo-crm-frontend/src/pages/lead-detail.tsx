@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { LeadStatusSelect } from "@/components/lead-status-select";
-import { ArrowLeft, Mail, Phone, Calendar, Save, Building2, BookOpen, Clock, FileText } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Calendar, Save, Building2, BookOpen, Clock, FileText, MapPin, Wallet, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function LeadDetail() {
@@ -203,6 +203,95 @@ Final numbers depend on material selection.`}
                       <div className="font-medium">{lead.course_interest || "Not specified"}</div>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Project Details Card */}
+            <Card>
+              <CardHeader className="pb-4 border-b flex flex-row items-center gap-2">
+                <Building2 className="w-5 h-5 text-emerald-600" />
+                <CardTitle className="text-lg">Project Details</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
+                  <div>
+                    <div className="flex items-center text-sm text-muted-foreground mb-1">
+                      <MapPin className="w-4 h-4 mr-1" /> Location
+                    </div>
+                    <div className="font-medium text-base">{lead.raw_data?.projectLocation || lead.raw_data?.['Project Location'] || 'Not Specified'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Type</div>
+                    <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-200">
+                      {lead.raw_data?.projectType || lead.raw_data?.['Project Type'] || 'Not Specified'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <div className="flex items-center text-sm text-muted-foreground mb-1">
+                      <FileText className="w-4 h-4 mr-1" /> Area
+                    </div>
+                    <div className="font-medium text-base">{lead.raw_data?.projectAreaSqft || lead.raw_data?.['Project Area'] || 'Not Specified'} Sq. Ft.</div>
+                  </div>
+                  <div>
+                    <div className="flex items-center text-sm text-muted-foreground mb-1">
+                      <Wallet className="w-4 h-4 mr-1" /> Budget
+                    </div>
+                    <div className="font-medium text-emerald-600 text-base">{lead.raw_data?.estimatedBudget || lead.raw_data?.['Estimated Budget'] || lead.raw_data?.budget || 'Not Specified'}</div>
+                  </div>
+                  <div>
+                    <div className="flex items-center text-sm text-muted-foreground mb-1">
+                      <Calendar className="w-4 h-4 mr-1" /> Timeline
+                    </div>
+                    <div className="font-medium text-base">{lead.raw_data?.completionTimeline || lead.raw_data?.['Completion Timeline'] || 'Not Specified'}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Engineering & Regulatory Card */}
+            <Card>
+              <CardHeader className="pb-4 border-b flex flex-row items-center gap-2">
+                <FileText className="w-5 h-5 text-emerald-600" />
+                <CardTitle className="text-lg">Engineering & Regulatory</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Land Ownership Status</div>
+                    <div className="font-medium">{lead.raw_data?.landownership || lead.raw_data?.landStatus || 'Not Specified'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Government Approvals</div>
+                    <div className="font-medium">{lead.raw_data?.govapprovals || lead.raw_data?.govtApprovals || 'Not Specified'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Architect Hired</div>
+                    <div className="font-medium">{lead.raw_data?.hiredarchitect || lead.raw_data?.hasArchitect || 'Not Specified'}</div>
+                  </div>
+                  <div className="md:col-span-2 mt-2">
+                    <div className="text-sm text-muted-foreground">Additional Requirements</div>
+                    <div className="font-medium whitespace-pre-wrap">{lead.raw_data?.requirements || lead.raw_data?.additionalrequirements || 'None'}</div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Download className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-base font-semibold">Uploaded Documents</h3>
+                  </div>
+                  {lead.raw_data?.uploadedDocuments && Object.keys(lead.raw_data.uploadedDocuments).length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      {Object.entries(lead.raw_data.uploadedDocuments).map(([key, url]: [string, any]) => (
+                        <a key={key} href={url} target="_blank" rel="noreferrer" className="flex items-center text-sm text-blue-600 hover:underline">
+                          <FileText className="w-4 h-4 mr-2" />
+                          {key}
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground italic">No documents uploaded.</div>
+                  )}
                 </div>
               </CardContent>
             </Card>

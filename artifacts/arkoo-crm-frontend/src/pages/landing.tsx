@@ -7,6 +7,8 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: string; message: string } | null>(null);
   const [completionPercent, setCompletionPercent] = useState(0);
+  const [emailValidationState, setEmailValidationState] = useState<'idle' | 'loading' | 'valid' | 'invalid'>('idle');
+  const [emailValidationMessage, setEmailValidationMessage] = useState('Please enter a valid corporate email address.');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -25,6 +27,42 @@ export default function LandingPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleEmailBlur = async () => {
+    const emailToVerify = formData.email;
+    if (!emailToVerify) {
+      setEmailValidationState('idle');
+      return;
+    }
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(emailToVerify)) {
+      setEmailValidationState('invalid');
+      setEmailValidationMessage('Please enter a valid corporate email address format.');
+      return;
+    }
+    
+    setEmailValidationState('loading');
+    setEmailValidationMessage('Verifying email domain...');
+    try {
+      const response = await fetch('/api/email/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToVerify })
+      });
+      const data = await response.json();
+      if (data.valid) {
+        setEmailValidationState('valid');
+        setEmailValidationMessage('Email Verified ✓');
+      } else {
+        setEmailValidationState('invalid');
+        setEmailValidationMessage(data.error || 'Email not available');
+      }
+    } catch (error) {
+      console.error('Email validation error:', error);
+      // Fallback to valid if server error so we don't block users if API is down
+      setEmailValidationState('valid');
+      setEmailValidationMessage('Email Verified ✓');
+    }
+  };
+
   useEffect(() => {
     let requiredCount = 7; // name, phone, email, type, location, area, budget, timeline = 8. (Type is always set, timeline is required)
     if (projectType === 'Other') requiredCount = 8;
@@ -32,7 +70,7 @@ export default function LandingPage() {
     let completedCount = 0;
     if (formData.name.trim().length >= 2) completedCount++;
     if (/^\+?[0-9]{10,15}$/.test(formData.phone)) completedCount++;
-    if (formData.email.includes('@')) completedCount++;
+    if (emailValidationState === 'valid') completedCount++;
     if (formData.location.trim().length >= 2) completedCount++;
     if (parseInt(formData.area) > 0) completedCount++;
     if (formData.budget !== '') completedCount++;
@@ -51,7 +89,7 @@ export default function LandingPage() {
     setNotification(null);
 
     // Basic Validation Check
-    if (completionPercent < 100) {
+    if (completionPercent < 100 || emailValidationState === 'invalid') {
       setNotification({ type: 'error', message: 'Please resolve all highlighted technical specification validation errors before transmitting.' });
       return;
     }
@@ -88,7 +126,7 @@ export default function LandingPage() {
 
     try {
       // Point to relative API endpoint since both run on same domain/port in production
-      const apiEndpoint = 'https://arkoo-u8sx.onrender.com/api/lms/leads/ingest';
+      const apiEndpoint = '/api/lms/leads/ingest';
       
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -133,7 +171,7 @@ export default function LandingPage() {
         
         setTimeout(() => {
           window.location.href = 'https://www.arkooprebuild.com';
-        }, 2200);
+        }, 800);
 
       } else {
         throw new Error(`Server returned HTTP status ${response.status}`);
@@ -308,7 +346,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className={`form-group ${formData.email !== '' && !formData.email.includes('@') ? 'invalid' : ''}`}>
+              <div className={`form-group ${emailValidationState === 'invalid' ? 'invalid' : ''}`}>
                 <label htmlFor="contact-email" className="form-label">
                   Corporate Email <span className="required-indicator">*</span>
                 </label>
@@ -324,11 +362,23 @@ export default function LandingPage() {
                     placeholder="you@company.com" 
                     required
                     value={formData.email}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      setEmailValidationState('idle');
+                    }}
+                    onBlur={handleEmailBlur}
                   />
+                  {emailValidationState === 'loading' && (
+                    <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>
+                      <svg style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite', color: '#f59e0b' }} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" style={{ opacity: 0.25 }}></circle>
+                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </span>
+                  )}
                 </div>
-                <div className="error-message">
-                  Please enter a valid corporate email address.
+                <div className="error-message" style={emailValidationState === 'valid' || emailValidationState === 'loading' || emailValidationState === 'invalid' ? { display: 'block', color: emailValidationState === 'valid' ? '#10b981' : (emailValidationState === 'loading' ? '#f59e0b' : '#ef4444'), fontSize: '11.5px', marginTop: '6px' } : {}}>
+                  {emailValidationState === 'idle' && formData.email !== '' && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email) ? 'Please enter a valid corporate email address.' : emailValidationMessage}
                 </div>
               </div>
             </fieldset>

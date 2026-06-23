@@ -116,6 +116,64 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Field validator function
+  let emailValidationState = 'idle'; // 'idle', 'loading', 'valid', 'invalid'
+  const emailField = document.getElementById('contact-email');
+  const emailStatusIcon = document.getElementById('email-status-icon');
+  const errorContactEmail = document.getElementById('error-contact-email');
+
+  async function validateEmailOnServer(email) {
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      emailValidationState = 'invalid';
+      errorContactEmail.textContent = 'Please enter a valid corporate email address format.';
+      errorContactEmail.style.display = 'block';
+      errorContactEmail.style.color = '#ef4444';
+      if (emailStatusIcon) emailStatusIcon.style.display = 'none';
+      return false;
+    }
+    
+    emailValidationState = 'loading';
+    if (emailStatusIcon) {
+      emailStatusIcon.style.display = 'block';
+      emailStatusIcon.innerHTML = `<svg style="width: 16px; height: 16px; animation: animate-spin 1s linear infinite; color: #f59e0b;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity: 0.25;"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+    }
+    errorContactEmail.textContent = 'Verifying email domain...';
+    errorContactEmail.style.display = 'block';
+    errorContactEmail.style.color = '#f59e0b';
+
+    try {
+      const response = await fetch('/api/email/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      const data = await response.json();
+      
+      if (data.valid) {
+        emailValidationState = 'valid';
+        errorContactEmail.textContent = 'Email Verified ✓';
+        errorContactEmail.style.color = '#10b981';
+        if (emailStatusIcon) emailStatusIcon.style.display = 'none';
+        validateField(emailField); // trigger re-validation for styling
+        return true;
+      } else {
+        emailValidationState = 'invalid';
+        errorContactEmail.textContent = data.error || 'Email not available';
+        errorContactEmail.style.color = '#ef4444';
+        if (emailStatusIcon) emailStatusIcon.style.display = 'none';
+        validateField(emailField);
+        return false;
+      }
+    } catch (error) {
+      console.error('Email validation error:', error);
+      emailValidationState = 'valid';
+      errorContactEmail.textContent = 'Email Verified ✓';
+      errorContactEmail.style.color = '#10b981';
+      if (emailStatusIcon) emailStatusIcon.style.display = 'none';
+      validateField(emailField);
+      return true;
+    }
+  }
+
   function validateField(field) {
     if (!field) return true;
     
@@ -125,12 +183,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Utilize standard native browser validation constraint rules
     let isValid = field.checkValidity();
 
+    if (field.id === 'contact-email') {
+      if (emailValidationState === 'invalid') {
+        isValid = false;
+      }
+    }
+
     if (isValid) {
       formGroup.classList.remove('invalid');
+      if (field.id === 'contact-email') {
+        if (emailValidationState === 'valid') {
+            errorContactEmail.style.display = 'block';
+            errorContactEmail.style.color = '#10b981';
+        } else if (emailValidationState === 'loading') {
+            errorContactEmail.style.display = 'block';
+            errorContactEmail.style.color = '#f59e0b';
+        } else {
+            errorContactEmail.style.display = 'none';
+        }
+      }
       updateProgressMeter();
       return true;
     } else {
       formGroup.classList.add('invalid');
+      if (field.id === 'contact-email' && emailValidationState === 'invalid') {
+         errorContactEmail.style.display = 'block';
+         errorContactEmail.style.color = '#ef4444';
+      }
       updateProgressMeter();
       return false;
     }
@@ -142,6 +221,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Typing and selections
     field.addEventListener('input', () => {
+      if (field.id === 'contact-email') {
+        emailValidationState = 'idle';
+      }
       validateField(field);
     });
 
@@ -150,7 +232,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     field.addEventListener('blur', () => {
-      validateField(field);
+      if (field.id === 'contact-email' && field.value.trim() !== '') {
+        validateEmailOnServer(field.value.trim());
+      } else {
+        validateField(field);
+      }
     });
 
     // Dynamic section highlight indicators on focus
@@ -183,6 +269,10 @@ document.addEventListener('DOMContentLoaded', () => {
         formIsValid = false;
       }
     });
+
+    if (emailValidationState === 'invalid' || emailValidationState === 'loading') {
+       formIsValid = false;
+    }
 
     // Block submission if any validation checks fail
     if (!formIsValid) {
@@ -245,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // Point directly to our backend endpoint. 
       // Using a relative path makes it portable across local development, local tunnels, and production servers.
-      const apiEndpoint = 'https://arkoo-u8sx.onrender.com/api/lms/leads/ingest';
+      const apiEndpoint = '/api/lms/leads/ingest';
 
       // Formulate asymmetric async POST transaction to the ingestion system
       const response = await fetch(apiEndpoint, {
@@ -286,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Redirect to external main site after timeout (Flow 1 Requirement)
         setTimeout(() => {
           window.location.href = 'https://www.arkooprebuild.com';
-        }, 2200);
+        }, 800);
 
       } else {
         // API responded with an error status (e.g. 500, 400)
