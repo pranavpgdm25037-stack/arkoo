@@ -116,10 +116,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Field validator function
+  // Field validator function
   let emailValidationState = 'idle'; // 'idle', 'loading', 'valid', 'invalid'
   const emailField = document.getElementById('contact-email');
   const emailStatusIcon = document.getElementById('email-status-icon');
   const errorContactEmail = document.getElementById('error-contact-email');
+  const verifyEmailBtn = document.getElementById('verify-email-btn');
+
+  if (verifyEmailBtn) {
+    verifyEmailBtn.addEventListener('click', () => {
+      if (emailField.value.trim() !== '') {
+        validateEmailOnServer(emailField.value.trim());
+      } else {
+        emailValidationState = 'invalid';
+        errorContactEmail.textContent = 'Please enter an email address to verify.';
+        errorContactEmail.style.display = 'block';
+        errorContactEmail.style.color = '#ef4444';
+        validateField(emailField);
+      }
+    });
+  }
 
   async function validateEmailOnServer(email) {
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
@@ -128,6 +144,10 @@ document.addEventListener('DOMContentLoaded', () => {
       errorContactEmail.style.display = 'block';
       errorContactEmail.style.color = '#ef4444';
       if (emailStatusIcon) emailStatusIcon.style.display = 'none';
+      if (verifyEmailBtn) {
+         verifyEmailBtn.textContent = 'Verify Email';
+         verifyEmailBtn.disabled = false;
+      }
       return false;
     }
     
@@ -139,6 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
     errorContactEmail.textContent = 'Verifying email domain...';
     errorContactEmail.style.display = 'block';
     errorContactEmail.style.color = '#f59e0b';
+    if (verifyEmailBtn) {
+       verifyEmailBtn.textContent = 'Verifying...';
+       verifyEmailBtn.disabled = true;
+    }
 
     try {
       const response = await fetch('/api/email/validate', {
@@ -153,6 +177,10 @@ document.addEventListener('DOMContentLoaded', () => {
         errorContactEmail.textContent = 'Email Verified ✓';
         errorContactEmail.style.color = '#10b981';
         if (emailStatusIcon) emailStatusIcon.style.display = 'none';
+        if (verifyEmailBtn) {
+           verifyEmailBtn.textContent = 'Verified';
+           verifyEmailBtn.style.display = 'none';
+        }
         validateField(emailField); // trigger re-validation for styling
         return true;
       } else {
@@ -160,6 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
         errorContactEmail.textContent = data.error || 'Email not available';
         errorContactEmail.style.color = '#ef4444';
         if (emailStatusIcon) emailStatusIcon.style.display = 'none';
+        if (verifyEmailBtn) {
+           verifyEmailBtn.textContent = 'Verify Email';
+           verifyEmailBtn.disabled = false;
+        }
         validateField(emailField);
         return false;
       }
@@ -169,6 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
       errorContactEmail.textContent = 'Email Verified ✓';
       errorContactEmail.style.color = '#10b981';
       if (emailStatusIcon) emailStatusIcon.style.display = 'none';
+      if (verifyEmailBtn) {
+         verifyEmailBtn.textContent = 'Verified';
+         verifyEmailBtn.style.display = 'none';
+      }
       validateField(emailField);
       return true;
     }
@@ -223,6 +259,11 @@ document.addEventListener('DOMContentLoaded', () => {
     field.addEventListener('input', () => {
       if (field.id === 'contact-email') {
         emailValidationState = 'idle';
+        if (verifyEmailBtn) {
+           verifyEmailBtn.style.display = 'inline-block';
+           verifyEmailBtn.textContent = 'Verify Email';
+           verifyEmailBtn.disabled = false;
+        }
       }
       validateField(field);
     });
@@ -232,11 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     field.addEventListener('blur', () => {
-      if (field.id === 'contact-email' && field.value.trim() !== '') {
-        validateEmailOnServer(field.value.trim());
-      } else {
-        validateField(field);
-      }
+      validateField(field);
     });
 
     // Dynamic section highlight indicators on focus
