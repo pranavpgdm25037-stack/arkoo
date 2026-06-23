@@ -1016,14 +1016,14 @@ const handlePifSubmit = async (req: any, res: any) => {
           try {
             const transporter = createTransporter();
             await transporter.sendMail({
-              from: \`"ARKOO Prebuild Team" <\${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>\`,
+              from: `"ARKOO Prebuild Team" <${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>`,
               to: emailAddress,
-              subject: \`Received your specifications - Arkoo Prebuild\`,
+              subject: `Received your specifications - Arkoo Prebuild`,
               html: thankYouHtml,
             });
-            console.log(\`[PIF BACKGROUND] Thank you email sent to \${emailAddress}\`);
+            console.log(`[PIF BACKGROUND] Thank you email sent to ${emailAddress}`);
           } catch (err: any) {
-            console.error(\`⚠️ [PIF BACKGROUND] Failed to send email to \${emailAddress}:\`, err.message);
+            console.error(`⚠️ [PIF BACKGROUND] Failed to send email to ${emailAddress}:`, err.message);
           }
         }
 
@@ -1056,7 +1056,7 @@ const handlePifSubmit = async (req: any, res: any) => {
                 fs.writeFileSync(LEDGER_PATH, JSON.stringify(existing, null, 2), "utf-8");
               } else {
                 existing.push({
-                  id: \`ARKOO-PIF-\${Date.now()}\`,
+                  id: `ARKOO-PIF-${Date.now()}`,
                   fullName: customerName,
                   leadSource: "Arkoo LMS Form",
                   contactInfo: { phone: phoneNumber, email: emailAddress },
