@@ -5,8 +5,27 @@ import { ilike, eq, desc } from "drizzle-orm";
 import { qualifyLead, type LeadInputData } from "../services/ai-qualification";
 import fs from "fs";
 import path from "path";
+import multer from "multer";
 
 const router = Router();
+
+// Configure Multer for File Uploads
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = path.resolve(process.cwd(), "../../uploads");
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const safeName = (file.originalname || 'document').replace(/[^a-zA-Z0-9.\-]/g, '_');
+      cb(null, `${Date.now()}_${safeName}`);
+    }
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 } // 50 MB limit per file
+});
 
 // ============================================================
 // LOCAL LEDGER CONFIGURATION
@@ -913,5 +932,169 @@ router.post("/webhooks/arkoo-lead", handleArkooLead);
 router.post("/lms/leads/ingest", handleArkooLead);
 router.post("/webhooks/google-form", handleGoogleFormSubmit);
 router.post("/lms/google-form/submit", handleGoogleFormSubmit);
+
+// ============================================================
+// PIF (PROJECT SPECIFICATION FORM) SUBMIT HANDLER
+// ============================================================
+const handlePifSubmit = async (req: any, res: any) => {
+  try {
+    // 1. Immediately respond to the client to avoid the 10-second Netlify proxy timeout!
+    res.status(200).json({
+      success: true,
+      message: "Form submission received successfully. Processing in background."
+    });
+
+    // 2. Offload AI and Email processing to a background task
+    (async () => {
+      try {
+        const data = req.body;
+        console.log("📝 Received PIF Submission (Background Task Started)");
+
+        const customerName = getFieldValue(data, ["fullname", "customername", "name"], "Customer");
+        const emailAddress = getFieldValue(data, ["emailaddress", "emailid", "email"], "");
+        const phoneNumber = getFieldValue(data, ["phonenumber", "phone", "contactnumber", "contact"], "Not Specified");
+        const projectLocation = getFieldValue(data, ["projectlocation", "location", "sitelocation", "city"], "Not Specified");
+        const projectType = getFieldValue(data, ["projecttype", "type", "structuretype"], "PEB Structure");
+        const proposedArea = getFieldValue(data, ["proposedarea", "area", "areasqft", "size"], "Not Specified");
+        const estimatedBudget = getFieldValue(data, ["estimatedbudget", "budget", "cost"], "Not Specified");
+        const timeline = getFieldValue(data, ["completiontimeline", "timeline", "duration"], "Not Specified");
+        const additionalRequirements = getFieldValue(data, ["additionalrequirements", "requirements", "comments", "notes", "message"], "None");
+
+        // Handle File Uploads via Multer
+        const uploadedFiles: Record<string, string> = {};
+        if (req.files) {
+          for (const [key, filesArray] of Object.entries(req.files) as any) {
+             const fileArray = filesArray as Express.Multer.File[];
+             if (fileArray && fileArray.length > 0) {
+                uploadedFiles[key] = `/uploads/${fileArray[0].filename}`;
+             }
+          }
+        }
+        data.uploadedDocuments = uploadedFiles;
+
+        const numericArea = parseInt(proposedArea.replace(/[^0-9]/g, '')) || 0;
+        let numericBudget = 0;
+        const budgetLower = estimatedBudget.toLowerCase();
+        const valMatch = estimatedBudget.match(/(\d+[,.\d]*)/);
+        if (valMatch) {
+          const val = parseFloat(valMatch[1].replace(/,/g, ''));
+          if (budgetLower.includes("cr") || budgetLower.includes("crore")) {
+            numericBudget = val * 10000000;
+          } else if (budgetLower.includes("lakh") || budgetLower.includes("lakhs") || budgetLower.includes("l")) {
+            numericBudget = val * 100000;
+          } else {
+            numericBudget = val < 1000 ? val * 100000 : val;
+          }
+        }
+
+        // Call AI Qualification (This takes time, which is why it's in the background)
+        const qualification = await qualifyLead({
+          source: "Arkoo LMS Form",
+          name: customerName,
+          contactInfo: phoneNumber || emailAddress || "Not Specified",
+          budget: numericBudget,
+          location: projectLocation,
+          projectAreaSqft: numericArea > 0 ? numericArea : null,
+          projectType: projectType,
+          timeline: timeline,
+          rawDetails: JSON.stringify(data)
+        });
+
+        // Send Thank You Email to Customer
+        if (emailAddress) {
+          const thankYouHtml = `
+          <div style="font-family: Calibri, Arial, sans-serif; font-size: 16px; line-height: 1.5; color: #222222; max-width: 600px;">
+            <p>Hi ${customerName},</p>
+            <p>Thanks for submitting your detailed project specification form!</p>
+            <p>Our engineering design team has successfully received your parameters, and we are already starting on your preliminary custom structural layout and cost estimation drawings.</p>
+            <p>A senior project consultant will connect with you shortly to present these blueprints and discuss the project details.</p>
+            <br>
+            <p>Best regards,</p>
+            <p><strong>Arkoo Prebuild Team</strong></p>
+          </div>
+          `;
+          try {
+            const transporter = createTransporter();
+            await transporter.sendMail({
+              from: \`"ARKOO Prebuild Team" <\${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>\`,
+              to: emailAddress,
+              subject: \`Received your specifications - Arkoo Prebuild\`,
+              html: thankYouHtml,
+            });
+            console.log(\`[PIF BACKGROUND] Thank you email sent to \${emailAddress}\`);
+          } catch (err: any) {
+            console.error(\`⚠️ [PIF BACKGROUND] Failed to send email to \${emailAddress}:\`, err.message);
+          }
+        }
+
+        // Sync to local ledger
+        try {
+          if (fs.existsSync(LEDGER_PATH)) {
+            const raw = fs.readFileSync(LEDGER_PATH, "utf-8");
+            const existing = JSON.parse(raw);
+            if (Array.isArray(existing)) {
+              let updatedLedger = false;
+              for (let i = existing.length - 1; i >= 0; i--) {
+                const entry = existing[i];
+                const entryEmail = entry.contactInfo?.email || "";
+                const entryPhone = entry.contactInfo?.phone || "";
+                
+                const emailMatch = emailAddress && entryEmail && entryEmail.toLowerCase().trim() === emailAddress.toLowerCase().trim();
+                const phoneMatch = phoneNumber && phoneNumber !== "Not Specified" && entryPhone && entryPhone.trim() === phoneNumber.trim();
+                
+                if (emailMatch || phoneMatch) {
+                  entry.aiScore = qualification.score;
+                  entry.aiCategory = qualification.category;
+                  entry.status = "Form Filled";
+                  entry.googleFormPayload = data; // Store full payload including file paths
+                  entry.lastUpdated = new Date().toISOString();
+                  updatedLedger = true;
+                  break;
+                }
+              }
+              if (updatedLedger) {
+                fs.writeFileSync(LEDGER_PATH, JSON.stringify(existing, null, 2), "utf-8");
+              } else {
+                existing.push({
+                  id: \`ARKOO-PIF-\${Date.now()}\`,
+                  fullName: customerName,
+                  leadSource: "Arkoo LMS Form",
+                  contactInfo: { phone: phoneNumber, email: emailAddress },
+                  projectType,
+                  projectLocation,
+                  projectAreaSqft: proposedArea,
+                  estimatedBudget,
+                  aiScore: qualification.score,
+                  aiCategory: qualification.category,
+                  status: "Form Filled",
+                  timestamp: new Date().toISOString(),
+                  rawPayload: data,
+                });
+                fs.writeFileSync(LEDGER_PATH, JSON.stringify(existing, null, 2), "utf-8");
+              }
+            }
+          }
+        } catch (err: any) {
+          console.error("⚠️ [PIF BACKGROUND] Failed to update local ledger:", err.message);
+        }
+
+        console.log("✅ [PIF BACKGROUND] Processing complete.");
+      } catch (bgError) {
+        console.error("⚠️ [PIF BACKGROUND] Unexpected error:", bgError);
+      }
+    })(); // Execute the async IIFE without awaiting it
+  } catch (error: any) {
+    console.error("⚠️ Error handling PIF submission:", error.message);
+    if (!res.headersSent) {
+       res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+};
+
+router.post("/lms/pif/submit", upload.fields([
+  { name: 'fileArchitectural', maxCount: 1 },
+  { name: 'fileTender', maxCount: 1 },
+  { name: 'fileSupporting', maxCount: 1 }
+]), handlePifSubmit);
 
 export default router;

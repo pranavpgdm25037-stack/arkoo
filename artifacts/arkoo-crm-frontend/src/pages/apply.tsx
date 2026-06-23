@@ -392,42 +392,34 @@ export default function ApplyPage() {
 
     setIsSubmitting(true);
     try {
-      // Construct AI-ready payload (Simulated uploads)
-      const aiPayload = {
-        submission_meta: {
-          timestamp: new Date().toISOString()
-        },
-        business_data: {
-          land_status: form.landStatus,
-          government_approvals_completed: form.govtApprovals === "Yes",
-          architect_status: {
-            hired: form.hasArchitect === "Yes",
-            architect_name: form.architectName || null,
-            architect_contact: form.architectContact || null,
-            looking_for_architect: form.hasArchitect === "No" ? (form.lookingForArchitect === "Yes") : null
-          }
-        },
-        uploaded_documents: {
-          architectural_drawings: form.fileArchitectural ? [`https://storage.arkoo.com/mock/${form.fileArchitectural.name}`] : [],
-          tender_drawings: form.fileTender ? [`https://storage.arkoo.com/mock/${form.fileTender.name}`] : [],
-          supporting_documents: form.fileSupporting ? [`https://storage.arkoo.com/mock/${form.fileSupporting.name}`] : []
-        },
-        // Old form fields for backward compatibility
-        ...form
-      };
+      // Use FormData to allow actual file uploads
+      const formData = new FormData();
+      formData.append("source", "Arkoo LMS Form");
+      
+      // Append all simple text/number fields
+      Object.entries(form).forEach(([key, value]) => {
+        if (value instanceof File) {
+          formData.append(key, value);
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, String(value));
+        }
+      });
 
-      const response = await fetch("/api/lms/google-form/submit", {
+      // Submit directly to Render backend to bypass Netlify's 10-second timeout
+      const response = await fetch("https://arkoo-u8sx.onrender.com/api/lms/pif/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...aiPayload,
-          source: "Arkoo LMS Form",
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
-        const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || `Server error: ${response.status}`);
+        let errorMsg = `Server error: ${response.status}`;
+        try {
+           const result = await response.json();
+           if (result.error) errorMsg = result.error;
+        } catch (e) {
+           // If not JSON, just use status text
+        }
+        throw new Error(errorMsg);
       }
 
       setSubmitted(true);
