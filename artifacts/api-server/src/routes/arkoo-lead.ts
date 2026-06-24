@@ -349,25 +349,10 @@ const handleArkooLead = async (req: any, res: any) => {
     const completionTimeline = String(data['Completion Timeline'] || data.completionTimeline || parsed.completionTimeline).trim();
 
     // Convert estimated budget string to number if possible for AI qualification
-    const numericBudget = parseInt(estimatedBudget.replace(/[^0-9]/g, '')) || 0;
+    const numericBudget = parseFloat(estimatedBudget.replace(/[^0-9.]/g, '')) || 0;
+    const qualification = { score: 0, category: "PENDING" as any, reason: "Awaiting detailed specification form" };
+    const qualStatus = "PENDING";
 
-    // 2. AI Qualification
-    const leadInput: LeadInputData = {
-      source: leadSource,
-      name: customerName,
-      contactInfo: phoneNumber,
-      budget: numericBudget,
-      location: projectLocation,
-      projectAreaSqft: projectAreaSqft,
-      projectType: projectType,
-      timeline: completionTimeline,
-      rawDetails: JSON.stringify(data)
-    };
-
-    const qualification = await qualifyLead(leadInput);
-    const qualStatus = data['Lead Qualification Status'] || data.qualificationStatus || qualification.category;
-
-    // 3. Check for Duplicate in Supabase DB (For logging purposes, we DO NOT return early anymore)
     try {
       let duplicateFound = false;
 
@@ -410,20 +395,11 @@ const handleArkooLead = async (req: any, res: any) => {
       projectLocation,
       projectAreaSqft,
       estimatedBudget,
-      aiScore: isLandingLead ? 0 : qualification.score,
-      aiCategory: isLandingLead ? "PENDING" : qualification.category,
-      status: isLandingLead ? "New" : "HOT LEAD (Awaiting Inputs)",
-      formSubmitted: isLandingLead,
-      qualification: isLandingLead ? {
-        totalScore: qualification.score,
-        category: qualification.category,
-        badge: qualification.category === 'HOT' ? '🔥 HOT' : qualification.category === 'WARM' ? '🌡️ WARM' : '❄️ COLD',
-        strengths: [],
-        risks: [],
-        dataNeeded: [],
-        recommendedActions: [qualification.reason],
-        evaluatedAt: new Date().toISOString()
-      } : null,
+      aiScore: 0,
+      aiCategory: "PENDING",
+      status: "New",
+      formSubmitted: false,
+      qualification: null,
       timestamp: new Date().toISOString(),
       rawPayload: data,
     };
@@ -439,7 +415,7 @@ const handleArkooLead = async (req: any, res: any) => {
     console.log(`  📧 Email      : ${emailAddress || "N/A"}`);
     console.log(`  📍 Location   : ${projectLocation}`);
     console.log(`  🏗  Type       : ${projectType}`);
-    console.log(`  🔥 AI Score   : ${isLandingLead ? `${qualification.score}/100 (${qualification.category})` : "PENDING (Awaiting detailed form completion)"}`);
+    console.log(`  🔥 AI Score   : PENDING (Awaiting detailed form completion)`);
     console.log(`  🕐 Timestamp  : ${ledgerEntry.timestamp}`);
     console.log("=".repeat(60) + "\n");
 
@@ -451,9 +427,9 @@ const handleArkooLead = async (req: any, res: any) => {
       const [lead] = await db.insert(leadsTable).values({
         source: leadSource,
         rawData: data,
-        aiScore: isLandingLead ? 0 : qualification.score,
-        aiCategory: isLandingLead ? "PENDING" : qualification.category,
-        status: isLandingLead ? "New" : "Form Pending"
+        aiScore: 0,
+        aiCategory: "PENDING",
+        status: "New"
       }).returning();
 
       leadId = lead.id;
@@ -543,25 +519,27 @@ const handleArkooLead = async (req: any, res: any) => {
       });
       console.log("Email sent successfully:", info.messageId);
 
-      // Trigger email dispatch to the Customer with the Detailed PIF Form Link
-      customerPreviewUrl = await sendCustomerEmail(
-        customerName, 
-        emailAddress, 
-        phoneNumber, 
-        ledgerEntry.id, 
-        detectBaseUrl(req),
-        {
-          projectlocation: projectLocation,
-          projecttype: projectType,
-          proposedarea: projectAreaSqft,
-          estimatedbudget: estimatedBudget,
-          completiontimeline: completionTimeline
-        }
-      );
+      // Trigger email dispatch to the Customer with the Detailed PIF Form Link (Only if NOT from Landing Page)
+      if (!isLandingLead) {
+        customerPreviewUrl = await sendCustomerEmail(
+          customerName, 
+          emailAddress, 
+          phoneNumber, 
+          ledgerEntry.id, 
+          detectBaseUrl(req),
+          {
+            projectlocation: projectLocation,
+            projecttype: projectType,
+            proposedarea: projectAreaSqft,
+            estimatedbudget: estimatedBudget,
+            completiontimeline: completionTimeline
+          }
+        );
 
-      if (leadId && isLandingLead) {
-        await db.update(leadsTable).set({ status: "Form Pending" }).where(eq(leadsTable.id, leadId));
-        console.log(`[STATUS UPDATE] Automatically updated lead ID ${leadId} to 'Form Pending' after sending customer email.`);
+        if (leadId) {
+          await db.update(leadsTable).set({ status: "Form Pending" }).where(eq(leadsTable.id, leadId));
+          console.log(`[STATUS UPDATE] Automatically updated lead ID ${leadId} to 'Form Pending' after sending customer email.`);
+        }
       }
 
     } catch (error: any) {
@@ -591,12 +569,14 @@ const handleArkooLead = async (req: any, res: any) => {
         const previewUrl = nodemailer.getTestMessageUrl(info);
         console.log("Verification Email Sent! View here:", previewUrl);
 
-        // Trigger Ethereal fallback for Customer email
-        customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, phoneNumber, ledgerEntry.id, detectBaseUrl(req));
+        // Trigger Ethereal fallback for Customer email (Only if NOT from Landing Page)
+        if (!isLandingLead) {
+          customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, phoneNumber, ledgerEntry.id, detectBaseUrl(req));
 
-        if (leadId && isLandingLead) {
-          await db.update(leadsTable).set({ status: "Form Pending" }).where(eq(leadsTable.id, leadId));
-          console.log(`[STATUS UPDATE] Automatically updated lead ID ${leadId} to 'Form Pending' after sending customer Ethereal email.`);
+          if (leadId) {
+            await db.update(leadsTable).set({ status: "Form Pending" }).where(eq(leadsTable.id, leadId));
+            console.log(`[STATUS UPDATE] Automatically updated lead ID ${leadId} to 'Form Pending' after sending customer Ethereal email.`);
+          }
         }
 
       } catch (fallbackError: any) {
@@ -1050,6 +1030,121 @@ const handlePifSubmit = async (req: any, res: any) => {
           }
         }
 
+        // Sync to Postgres DB
+        if (emailAddress || (phoneNumber && phoneNumber !== "Not Specified")) {
+          try {
+            let customerRecord = null;
+            if (emailAddress) {
+              const records = await db.select()
+                .from(customersTable)
+                .where(ilike(customersTable.contactInfo, `%${emailAddress}%`))
+                .orderBy(desc(customersTable.id))
+                .limit(1);
+              if (records.length > 0) customerRecord = records[0];
+            }
+            if (!customerRecord && phoneNumber && phoneNumber !== "Not Specified") {
+              const records = await db.select()
+                .from(customersTable)
+                .where(ilike(customersTable.contactInfo, `%${phoneNumber}%`))
+                .orderBy(desc(customersTable.id))
+                .limit(1);
+              if (records.length > 0) customerRecord = records[0];
+            }
+
+            if (customerRecord && customerRecord.leadId) {
+              await db.update(leadsTable)
+                .set({ 
+                  status: "Form Filled",
+                  aiScore: qualification.score,
+                  aiCategory: qualification.category,
+                  rawData: data
+                })
+                .where(eq(leadsTable.id, customerRecord.leadId));
+              console.log(`[PIF STATUS UPDATE] Successfully updated Lead ID ${customerRecord.leadId} to status: Form Filled with AI Score: ${qualification.score} (${qualification.category})`);
+
+              // Send Notification Email to Sales Team
+              const DASHBOARD_BASE_URL = process.env.DASHBOARD_BASE_URL || "https://joyful-cranachan-b9c054.netlify.app";
+              const leadDetailUrl = `${DASHBOARD_BASE_URL}/leads/${customerRecord.leadId}`;
+              const salesNotificationHtml = `
+              <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                <h2 style="color: #2563eb; margin-top: 0; font-family: sans-serif;">📋 PROJECT SPECIFICATION SUBMITTED</h2>
+                <p>Dear Sales Team,</p>
+                <p>Great news! The customer <strong>${customerName}</strong> has filled out and submitted the <strong>Detailed Project Specification Form</strong>.</p>
+                <p>Our AI system has analyzed their inputs and qualified this lead.</p>
+                
+                <!-- Premium AI Qualification Status Banner -->
+                <div style="margin: 20px 0; padding: 15px; background: ${qualification.category === 'HOT' ? '#fdf2f2' : qualification.category === 'WARM' ? '#fffbeb' : '#f0fdf4'}; border-left: 5px solid ${qualification.category === 'HOT' ? '#ef4444' : qualification.category === 'WARM' ? '#f59e0b' : '#22c55e'}; border-radius: 4px; font-family: sans-serif;">
+                  <h3 style="margin: 0 0 5px 0; color: ${qualification.category === 'HOT' ? '#991b1b' : qualification.category === 'WARM' ? '#92400e' : '#166534'};">
+                    ${qualification.category === 'HOT' ? '🔥' : qualification.category === 'WARM' ? '⚡' : '❄️'} AI Qualification: ${qualification.category} LEAD
+                  </h3>
+                  <p style="margin: 0; font-size: 14px; color: #374151;">
+                    This lead has been analyzed and classified with an AI score of <strong>${qualification.score}/100</strong> based on budget size, location feasibility, structure type, and timeline urgency.
+                  </p>
+                </div>
+                
+                <table style="border-collapse: collapse; width: 100%; max-width: 600px; margin: 20px 0; font-size: 14px;">
+                  <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px 0; font-weight: bold; width: 40%;">Lead Name</td><td style="padding: 10px 0;">${customerName}</td></tr>
+                  <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px 0; font-weight: bold;">Contact Number</td><td style="padding: 10px 0;">${phoneNumber}</td></tr>
+                  <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px 0; font-weight: bold;">Email ID</td><td style="padding: 10px 0;">${emailAddress || "N/A"}</td></tr>
+                  <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px 0; font-weight: bold;">Project Location</td><td style="padding: 10px 0;">${projectLocation}</td></tr>
+                  <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px 0; font-weight: bold;">Project Type</td><td style="padding: 10px 0;">${projectType}</td></tr>
+                  <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px 0; font-weight: bold;">Proposed Area</td><td style="padding: 10px 0;">${proposedArea}</td></tr>
+                  <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px 0; font-weight: bold;">Estimated Budget</td><td style="padding: 10px 0;">${estimatedBudget}</td></tr>
+                  <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px 0; font-weight: bold;">Timeline</td><td style="padding: 10px 0;">${timeline}</td></tr>
+                </table>
+
+                <p style="font-weight: bold; color: #2563eb; margin-top: 25px;">
+                  👉 <a href="${leadDetailUrl}" style="color: #ffffff; background-color: #2563eb; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">View Lead Details in CRM</a>
+                </p>
+
+                <p style="font-size: 13px; color: #334155; margin-top: 20px; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
+                  Regards,<br>
+                  <strong>ARKOO Lead Management System</strong><br>
+                  ARKOO Pre-Build Pvt. Ltd.
+                </p>
+              </div>
+              `;
+
+              try {
+                const transporter = createTransporter();
+                await transporter.sendMail({
+                  from: `"ARKOO Pre-Build AI" <${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>`,
+                  to: process.env.SALES_REP_EMAIL || 'newleadnotification001@gmail.com',
+                  replyTo: process.env.GMAIL_USER || 'arkooprebuildai@gmail.com',
+                  subject: `[FORM FILLED] Project PIF Submitted: ${customerName} (${projectType})`,
+                  html: salesNotificationHtml,
+                  headers: {
+                    'X-Priority': '1',
+                    'X-MSMail-Priority': 'High',
+                    'Importance': 'High'
+                  }
+                });
+                console.log(`[PIF BACKGROUND] Notification email sent to sales representative`);
+              } catch (err: any) {
+                console.error(`⚠️ [PIF BACKGROUND] Failed to send notification email to sales team:`, err.message);
+              }
+
+              // Also update the project record with detailed specifications
+              try {
+                await db.update(projectsTable)
+                  .set({
+                    type: projectType,
+                    areaSqft: numericArea > 0 ? numericArea : null,
+                    budget: numericBudget > 0 ? numericBudget.toString() : "0",
+                    timeline: timeline
+                  })
+                  .where(eq(projectsTable.customerId, customerRecord.id));
+              } catch (projErr: any) {
+                console.error("⚠️ Failed to update project details in DB:", projErr.message);
+              }
+            } else {
+              console.log("⚠️ Could not match customer record in DB for PIF status update");
+            }
+          } catch (err: any) {
+            console.error("⚠️ Failed to update PIF lead status in database:", err.message);
+          }
+        }
+
         // Sync to local ledger
         try {
           if (fs.existsSync(LEDGER_PATH)) {
@@ -1114,10 +1209,115 @@ const handlePifSubmit = async (req: any, res: any) => {
   }
 };
 
+const handleSendFormEmail = async (req: any, res: any) => {
+  try {
+    const leadId = parseInt(req.params.id, 10);
+    if (isNaN(leadId)) {
+      return res.status(400).json({ error: "Invalid lead ID" });
+    }
+
+    // 1. Fetch lead details
+    const [lead] = await db.select({
+      id: leadsTable.id,
+      name: customersTable.name,
+      contactInfo: customersTable.contactInfo,
+      source: leadsTable.source,
+      status: leadsTable.status,
+      project_type: projectsTable.type,
+      budget: projectsTable.budget,
+      area_sqft: projectsTable.areaSqft,
+      location: customersTable.address,
+      timeline: projectsTable.timeline
+    })
+    .from(leadsTable)
+    .leftJoin(customersTable, eq(leadsTable.id, customersTable.leadId))
+    .leftJoin(projectsTable, eq(customersTable.id, projectsTable.customerId))
+    .where(eq(leadsTable.id, leadId))
+    .limit(1);
+
+    if (!lead) {
+      return res.status(404).json({ error: "Lead not found" });
+    }
+
+    // Parse contactInfo
+    let contact = lead.contactInfo;
+    try {
+      if (typeof contact === 'string' && contact.startsWith('{')) {
+        contact = JSON.parse(contact);
+      }
+    } catch (e) {}
+
+    const emailAddress = typeof contact === 'object' && contact ? (contact as any).email : "";
+    const phoneNumber = typeof contact === 'object' && contact ? (contact as any).phone : "";
+
+    if (!emailAddress) {
+      return res.status(400).json({ error: "Lead does not have a valid email address" });
+    }
+
+    // 2. Send Email
+    const previewUrl = await sendCustomerEmail(
+      lead.name || "Customer",
+      emailAddress,
+      phoneNumber,
+      lead.id.toString(),
+      detectBaseUrl(req),
+      {
+        projectlocation: lead.location,
+        projecttype: lead.project_type,
+        proposedarea: lead.area_sqft,
+        estimatedbudget: lead.budget,
+        completiontimeline: lead.timeline
+      }
+    );
+
+    // 3. Update status to "Form Pending"
+    await db.update(leadsTable)
+      .set({ status: "Form Pending" })
+      .where(eq(leadsTable.id, lead.id));
+
+    // Update local ledger too
+    try {
+      if (fs.existsSync(LEDGER_PATH)) {
+        const raw = fs.readFileSync(LEDGER_PATH, "utf-8");
+        const existing = JSON.parse(raw);
+        if (Array.isArray(existing)) {
+          let updatedLedger = false;
+          for (let i = existing.length - 1; i >= 0; i--) {
+            const entry = existing[i];
+            const entryEmail = entry.contactInfo?.email || "";
+            if (entryEmail.toLowerCase().trim() === emailAddress.toLowerCase().trim()) {
+              entry.status = "Form Pending";
+              entry.lastUpdated = new Date().toISOString();
+              updatedLedger = true;
+              break;
+            }
+          }
+          if (updatedLedger) {
+            fs.writeFileSync(LEDGER_PATH, JSON.stringify(existing, null, 2), "utf-8");
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error("⚠️ Failed to update local ledger:", err.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Project Specification Form email sent successfully",
+      previewUrl
+    });
+  } catch (error: any) {
+    console.error("Error sending manual form email:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 router.post("/lms/pif/submit", upload.fields([
   { name: 'fileArchitectural', maxCount: 1 },
   { name: 'fileTender', maxCount: 1 },
   { name: 'fileSupporting', maxCount: 1 }
 ]), handlePifSubmit);
+
+router.post("/leads/:id/send-form", handleSendFormEmail);
 
 export default router;

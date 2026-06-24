@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "wouter";
-import { useGetLead, useUpdateLead } from "@/hooks/use-leads";
+import { useGetLead, useUpdateLead, useSendFormEmail } from "@/hooks/use-leads";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { LeadStatusSelect } from "@/components/lead-status-select";
-import { ArrowLeft, Mail, Phone, Calendar, Save, Building2, BookOpen, Clock, FileText, MapPin, Wallet, Download } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Calendar, Save, Building2, BookOpen, Clock, FileText, MapPin, Wallet, Download, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function LeadDetail() {
@@ -19,6 +19,7 @@ export default function LeadDetail() {
   const lead = leadData as any;
   
   const updateLead = useUpdateLead();
+  const sendFormEmail = useSendFormEmail();
   const { toast } = useToast();
 
   const [notes, setNotes] = useState("");
@@ -78,10 +79,11 @@ export default function LeadDetail() {
   }
 
   const getLabelColor = (label: string) => {
-    switch (label) {
-      case "Hot": return "bg-red-500 text-white";
-      case "Warm": return "bg-amber-500 text-white";
-      case "Cold": return "bg-blue-500 text-white";
+    if (!label) return "bg-slate-500 text-white";
+    switch (label.toUpperCase()) {
+      case "HOT": return "bg-red-500 text-white";
+      case "WARM": return "bg-amber-500 text-white";
+      case "COLD": return "bg-blue-500 text-white";
       default: return "bg-slate-500 text-white";
     }
   };
@@ -105,6 +107,37 @@ export default function LeadDetail() {
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{lead.name}</h1>
           </div>
           <div className="hidden sm:flex items-center gap-2">
+            {(lead.status === "New" || lead.status === "Form Pending") && (
+              <Button 
+                variant="outline" 
+                className="bg-indigo-50 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-900 text-indigo-700 font-semibold"
+                disabled={sendFormEmail.isPending}
+                onClick={() => {
+                  sendFormEmail.mutate(lead.id, {
+                    onSuccess: (data: any) => {
+                      toast({
+                        title: "Form email sent",
+                        description: `Specification form invite sent successfully.${data.previewUrl ? ` Preview URL: ${data.previewUrl}` : ''}`,
+                      });
+                    },
+                    onError: (err: any) => {
+                      toast({
+                        title: "Failed to send email",
+                        description: err.message || "Could not trigger email.",
+                        variant: "destructive"
+                      });
+                    }
+                  });
+                }}
+              >
+                {sendFormEmail.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4 mr-2" />
+                )}
+                Send Form
+              </Button>
+            )}
             <LeadStatusSelect id={lead.id} initialStatus={lead.status} />
             <Dialog>
               <DialogTrigger asChild>

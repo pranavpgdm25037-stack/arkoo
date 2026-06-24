@@ -424,17 +424,19 @@ export default function LandingPage() {
                     <label htmlFor="custom-project-type" className="form-label">
                       Custom Project Type <span className="required-indicator">*</span>
                     </label>
-                    <div className="input-wrapper">
+                    <div className="input-wrapper" onClick={() => document.getElementById('custom-project-type')?.focus()}>
                       <span className="input-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                       </span>
                       <input 
                         type="text" 
                         id="custom-project-type" 
+                        name="customProjectType"
                         className="form-control" 
                         placeholder="Enter your custom project type" 
                         minLength={3}
                         required
+                        autoFocus
                         value={customProjectType}
                         onChange={(e) => setCustomProjectType(e.target.value)}
                       />

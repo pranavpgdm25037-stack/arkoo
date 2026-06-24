@@ -283,7 +283,30 @@ router.get("/leads/:id", async (req, res) => {
       return;
     }
 
-    res.json(result);
+    let contact = result.contactInfo;
+    try {
+      if (typeof contact === 'string' && contact.startsWith('{')) {
+        contact = JSON.parse(contact);
+      }
+    } catch (e) {}
+
+    const phone = typeof contact === 'object' && contact ? (contact as any).phone : contact;
+    const email = typeof contact === 'object' && contact ? (contact as any).email : "";
+
+    let notesText = "";
+    if (result.notes && typeof result.notes === 'object') {
+      notesText = (result.notes as any).notes || "";
+    }
+
+    const formattedResult = {
+      ...result,
+      phone: phone || "N/A",
+      email: email || "N/A",
+      notes: notesText,
+      rawData: result.notes
+    };
+
+    res.json(formattedResult);
   } catch (error) {
     console.error("Error fetching lead:", error);
     res.status(500).json({ error: "Failed to fetch lead details" });
@@ -297,11 +320,20 @@ router.patch("/leads/:id", async (req, res) => {
       res.status(400).json({ error: "Invalid lead ID" });
       return;
     }
-    const { status, ai_label } = req.body;
+    const { status, ai_label, notes } = req.body;
 
     const updateData: any = {};
     if (status) updateData.status = status;
     if (ai_label) updateData.aiCategory = ai_label;
+
+    if (notes !== undefined) {
+      const [existing] = await db.select({ rawData: leadsTable.rawData }).from(leadsTable).where(eq(leadsTable.id, leadId)).limit(1);
+      const currentRawData = existing?.rawData || {};
+      const newRawData = typeof currentRawData === 'object' && currentRawData !== null 
+        ? { ...currentRawData, notes } 
+        : { notes };
+      updateData.rawData = newRawData;
+    }
 
     await db.update(leadsTable)
       .set(updateData)

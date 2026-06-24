@@ -11,13 +11,15 @@ const mapLeadData = (leadData: any) => {
     phone: leadData.phone || 'N/A',
     source: leadData.source,
     status: leadData.status,
-    ai_score: leadData.ai_score,
-    ai_label: leadData.ai_label,
-    assigned_to: leadData.assigned_to,
-    created_at: leadData.created_at,
-    updated_at: leadData.updated_at,
+    ai_score: leadData.ai_score !== undefined ? leadData.ai_score : (leadData.aiScore || 0),
+    ai_label: leadData.ai_label || leadData.aiCategory || 'PENDING',
+    assigned_to: leadData.assigned_to || leadData.assignedToUserId,
+    created_at: leadData.created_at || leadData.createdAt,
+    updated_at: leadData.updated_at || leadData.updatedAt,
     location: leadData.location,
-    project_type: leadData.project_type
+    project_type: leadData.project_type,
+    notes: leadData.notes || '',
+    raw_data: leadData.rawData || null
   };
 };
 
@@ -117,6 +119,35 @@ export function useUpdateLead() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-stats'] });
+    }
+  });
+}
+
+export function useSendFormEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await fetch(`/api/leads/${id}/send-form`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        let errorMsg = 'Failed to send form email';
+        try {
+          const data = await response.json();
+          if (data.error) errorMsg = data.error;
+        } catch (e) {}
+        throw new Error(errorMsg);
+      }
+      return await response.json();
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['lead', String(id)] });
       queryClient.invalidateQueries({ queryKey: ['leads-stats'] });
     }
   });
