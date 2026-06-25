@@ -1,12 +1,7 @@
 import { Router } from "express";
-import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const router = Router();
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || "missing-key",
-});
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "missing-key");
 
@@ -21,8 +16,8 @@ router.post("/generate", async (req, res) => {
   try {
     const { platform, topic, tone, keywords, variantCount } = req.body;
 
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return res.status(500).json({ error: "Server configuration missing: ANTHROPIC_API_KEY is not set." });
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ error: "Server configuration missing: GEMINI_API_KEY is not set." });
     }
 
     if (!topic || !platform) {
@@ -50,18 +45,13 @@ Return JSON in exactly this shape:
   ]
 }`;
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-latest',
-      max_tokens: 1000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      systemInstruction: systemPrompt 
     });
 
-    const rawText = response.content
-      .filter((block) => block.type === 'text')
-      .map((block) => (block as any).text)
-      .join('\n')
-      .trim();
+    const response = await model.generateContent(userPrompt);
+    const rawText = response.response.text().trim();
 
     // Strip accidental markdown fences just in case
     const cleaned = rawText.replace(/^```json\s*|```$/g, '').trim();
