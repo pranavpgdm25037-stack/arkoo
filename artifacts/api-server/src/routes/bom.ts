@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { db } from "../db";
-import { leadsTable, projectsTable } from "../db/schema";
+import { db, leadsTable, projectsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { GoogleGenAI } from "@google/genai";
 import fs from "fs";

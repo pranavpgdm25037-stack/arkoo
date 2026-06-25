@@ -11,6 +11,7 @@ import pifRouter from "./pif";
 import analyzeDrawingRouter from "./analyze-drawing";
 import { emailValidationRouter } from "./email-validation";
 import bomRouter from "./bom";
+import contentRouter from "./content";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(pifRouter);
 router.use(analyzeDrawingRouter);
 router.use("/email", emailValidationRouter);
 router.use(bomRouter);
+router.use("/content", contentRouter);
 
 export default router;

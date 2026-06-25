@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Settings, LogOut, FileSpreadsheet, ClipboardList, Globe, Package, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, Settings, LogOut, FileSpreadsheet, ClipboardList, Globe, Package, TrendingUp, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -69,6 +69,12 @@ export function Layout({ children }: { children: ReactNode }) {
               <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer premium-sidebar-link ${location === '/integrations' ? 'premium-sidebar-link-active' : ''}`}>
                 <Globe className="w-4 h-4" />
                 Integrations
+              </div>
+            </Link>
+            <Link href="/content-studio">
+              <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer premium-sidebar-link ${location.startsWith('/content-studio') ? 'premium-sidebar-link-active' : ''}`}>
+                <Sparkles className="w-4 h-4" />
+                Content Studio
               </div>
             </Link>
           </div>
