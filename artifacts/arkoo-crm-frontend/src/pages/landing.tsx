@@ -103,12 +103,15 @@ export default function LandingPage() {
       combinedRequirements += `\n\nAdditional Comments: ${formData.requirements}`;
     }
 
+    const params = new URLSearchParams(window.location.search);
+    const urlSource = params.get('utm_source') || params.get('source') || params.get('ref') || 'Landing Page';
+
     const payload = {
       fullName: formData.name,
       phone: formData.phone,
       email: formData.email,
-      leadSource: "Landing Page",
-      source: "Landing Page",
+      leadSource: urlSource,
+      source: urlSource,
       projectType: typeVal,
       projectLocation: formData.location,
       projectAreaSqft: parseInt(formData.area) || 0,
@@ -158,7 +161,7 @@ export default function LandingPage() {
             projectAreaSqft: parseInt(formData.area) || 0,
             estimatedBudget: formData.budget,
             completionTimeline: formData.timeline,
-            leadSource: "Landing Page",
+            leadSource: urlSource,
             requirements: combinedRequirements
           })
         }).catch(err => console.error("SMTP Function error:", err));
