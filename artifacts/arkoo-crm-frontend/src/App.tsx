@@ -14,7 +14,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/protected-route";
 import LandingPage from "@/pages/landing";
 import Integrations from "@/pages/integrations";
-import BOMEngine from "@/pages/bom";
+import AdsAnalytics from "@/pages/ads-analytics";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,9 +57,9 @@ function Router() {
           <Integrations />
         </ProtectedRoute>
       </Route>
-      <Route path="/bom">
+      <Route path="/ads-analytics">
         <ProtectedRoute>
-          <BOMEngine />
+          <AdsAnalytics />
         </ProtectedRoute>
       </Route>
       <Route path="/leads/:id">

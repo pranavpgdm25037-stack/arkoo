@@ -59,16 +59,16 @@ export function Layout({ children }: { children: ReactNode }) {
                 Project Form
               </div>
             </Link>
-            <Link href="/bom">
-              <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer premium-sidebar-link ${location.startsWith('/bom') ? 'premium-sidebar-link-active' : ''}`}>
-                <Package className="w-4 h-4" />
-                BOM Engine
+            <Link href="/ads-analytics">
+              <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer premium-sidebar-link ${location.startsWith('/ads-analytics') ? 'premium-sidebar-link-active' : ''}`}>
+                <TrendingUp className="w-4 h-4" />
+                Ads Analytics
               </div>
             </Link>
             <Link href="/integrations">
               <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer premium-sidebar-link ${location === '/integrations' ? 'premium-sidebar-link-active' : ''}`}>
-                <TrendingUp className="w-4 h-4" />
-                Ads Analytics
+                <Globe className="w-4 h-4" />
+                Integrations
               </div>
             </Link>
           </div>
