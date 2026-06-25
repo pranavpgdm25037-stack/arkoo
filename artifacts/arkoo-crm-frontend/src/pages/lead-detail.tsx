@@ -202,8 +202,8 @@ export default function LeadDetail() {
                       <BookOpen className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">Course Interest</div>
-                      <div className="font-medium">{lead.course_interest || "Not specified"}</div>
+                      <div className="text-sm text-muted-foreground">Project Type</div>
+                      <div className="font-medium">{lead.project_type || lead.raw_data?.projectType || lead.raw_data?.projecttype || lead.raw_data?.['Project Type'] || "Not specified"}</div>
                     </div>
                   </div>
                 </div>
