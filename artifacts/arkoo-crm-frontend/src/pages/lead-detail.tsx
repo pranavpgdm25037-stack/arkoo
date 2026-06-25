@@ -292,13 +292,40 @@ export default function LeadDetail() {
                     <h3 className="text-base font-semibold">Uploaded Documents</h3>
                   </div>
                   {lead.raw_data?.uploadedDocuments && Object.keys(lead.raw_data.uploadedDocuments).length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      {Object.entries(lead.raw_data.uploadedDocuments).map(([key, url]: [string, any]) => (
-                        <a key={key} href={url} target="_blank" rel="noreferrer" className="flex items-center text-sm text-blue-600 hover:underline">
-                          <FileText className="w-4 h-4 mr-2" />
-                          {key}
-                        </a>
-                      ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {Object.entries(lead.raw_data.uploadedDocuments).map(([key, url]: [string, any]) => {
+                        const fullUrl = url.startsWith('/') ? `https://arkoo-u8sx.onrender.com${url}` : url;
+                        const isImage = fullUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i);
+                        
+                        return (
+                          <div key={key} className="flex flex-col justify-between p-3 border rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
+                            <div className="flex items-center mb-2">
+                              <FileText className="w-4 h-4 mr-2 text-blue-500" />
+                              <span className="text-sm font-semibold text-slate-700 capitalize">
+                                {key.replace(/([A-Z])/g, ' $1').trim()}
+                              </span>
+                            </div>
+                            
+                            {isImage ? (
+                              <div className="relative group w-full h-32 rounded-lg overflow-hidden border bg-white mt-1 mb-3">
+                                <img src={fullUrl} alt={key} className="w-full h-full object-cover" />
+                                <a href={fullUrl} target="_blank" rel="noreferrer" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white text-xs font-medium gap-1 cursor-pointer backdrop-blur-[2px]">
+                                  <Download className="w-5 h-5" />
+                                  View / Download
+                                </a>
+                              </div>
+                            ) : (
+                              <div className="w-full h-12 bg-white border rounded-lg mt-1 mb-3 flex items-center justify-center text-xs text-slate-400">
+                                Document File
+                              </div>
+                            )}
+
+                            <a href={fullUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center w-full py-1.5 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors">
+                              <Download className="w-3 h-3 mr-1" /> Open File
+                            </a>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-sm text-muted-foreground italic">No documents uploaded.</div>
