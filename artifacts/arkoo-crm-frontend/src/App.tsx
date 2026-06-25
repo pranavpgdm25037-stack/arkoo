@@ -14,6 +14,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/protected-route";
 import LandingPage from "@/pages/landing";
 import Integrations from "@/pages/integrations";
+import BOMEngine from "@/pages/bom";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +55,11 @@ function Router() {
       <Route path="/integrations">
         <ProtectedRoute>
           <Integrations />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/bom">
+        <ProtectedRoute>
+          <BOMEngine />
         </ProtectedRoute>
       </Route>
       <Route path="/leads/:id">

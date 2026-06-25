@@ -10,6 +10,7 @@ import linkedInWebhookRouter from "./linkedin-webhook";
 import pifRouter from "./pif";
 import analyzeDrawingRouter from "./analyze-drawing";
 import { emailValidationRouter } from "./email-validation";
+import bomRouter from "./bom";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(linkedInWebhookRouter); // LinkedIn Lead Gen Forms
 router.use(pifRouter);
 router.use(analyzeDrawingRouter);
 router.use("/email", emailValidationRouter);
+router.use(bomRouter);
 
 export default router;

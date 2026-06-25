@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Settings, LogOut, FileSpreadsheet, ClipboardList, Globe } from "lucide-react";
+import { LayoutDashboard, Users, Settings, LogOut, FileSpreadsheet, ClipboardList, Globe, Package } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -57,6 +57,12 @@ export function Layout({ children }: { children: ReactNode }) {
               <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer premium-sidebar-link ${location === '/apply' ? 'premium-sidebar-link-active' : ''}`}>
                 <ClipboardList className="w-4 h-4" />
                 Project Form
+              </div>
+            </Link>
+            <Link href="/bom">
+              <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer premium-sidebar-link ${location.startsWith('/bom') ? 'premium-sidebar-link-active' : ''}`}>
+                <Package className="w-4 h-4" />
+                BOM Engine
               </div>
             </Link>
             <Link href="/integrations">

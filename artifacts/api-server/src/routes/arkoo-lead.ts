@@ -991,6 +991,14 @@ const handlePifSubmit = async (req: any, res: any) => {
           }
         }
 
+        const landownership = getFieldValue(data, ["landownership", "landStatus"], "Not Specified");
+        const govapprovals = getFieldValue(data, ["govapprovals", "govtApprovals"], "Not Specified");
+        const hiredarchitect = getFieldValue(data, ["hiredarchitect", "hasArchitect"], "Not Specified");
+        const architectName = getFieldValue(data, ["architectName"], "");
+        const architectContact = getFieldValue(data, ["architectContact"], "");
+        const architectDetailsProvided = !!(architectName || architectContact);
+        const drawingsUploadedCount = Object.keys(uploadedFiles).length;
+
         // Call AI Qualification (This takes time, which is why it's in the background)
         const qualification = await qualifyLead({
           source: "Arkoo LMS Form",
@@ -1001,6 +1009,11 @@ const handlePifSubmit = async (req: any, res: any) => {
           projectAreaSqft: numericArea > 0 ? numericArea : null,
           projectType: projectType,
           timeline: timeline,
+          landOwnership: landownership,
+          governmentApprovals: govapprovals,
+          architectHired: hiredarchitect,
+          architectDetailsProvided: architectDetailsProvided,
+          drawingsUploadedCount: drawingsUploadedCount,
           rawDetails: JSON.stringify(data)
         });
 
