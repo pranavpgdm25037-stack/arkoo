@@ -5,10 +5,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const router = Router();
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: process.env.ANTHROPIC_API_KEY || "missing-key",
 });
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "missing-key");
 
 const PLATFORM_GUIDANCE: Record<string, string> = {
   linkedin: 'Professional tone, 2-4 short paragraphs, can include 1-2 relevant hashtags at the end. Aimed at B2B decision-makers in construction/real estate.',
@@ -20,6 +20,10 @@ const PLATFORM_GUIDANCE: Record<string, string> = {
 router.post("/generate", async (req, res) => {
   try {
     const { platform, topic, tone, keywords, variantCount } = req.body;
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({ error: "Server configuration missing: ANTHROPIC_API_KEY is not set." });
+    }
 
     if (!topic || !platform) {
       return res.status(400).json({ error: "topic and platform are required" });
@@ -80,6 +84,10 @@ Return JSON in exactly this shape:
 router.post("/generate-image", async (req, res) => {
   try {
     const { caption, platform, visualStyle } = req.body;
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ error: "Server configuration missing: GEMINI_API_KEY is not set." });
+    }
 
     if (!caption || !platform || !visualStyle) {
       return res.status(400).json({ error: "caption, platform, and visualStyle are required" });
