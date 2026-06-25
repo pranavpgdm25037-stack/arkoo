@@ -9,8 +9,6 @@ import Login from "@/pages/auth/login";
 import Contacts from "@/pages/contacts";
 import Settings from "@/pages/settings";
 import ApplyPage from "@/pages/apply";
-import Quotations from "@/pages/quotations";
-import GeneratePIF from "@/pages/generate-pif";
 import LandingLeads from "@/pages/landing-leads";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/protected-route";
@@ -47,31 +45,7 @@ function Router() {
           <LandingLeads />
         </ProtectedRoute>
       </Route>
-      <Route path="/quotations">
-        <ProtectedRoute>
-          <Quotations />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/quotations/handmade">
-        <ProtectedRoute>
-          <Quotations />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/quotations/ga">
-        <ProtectedRoute>
-          <Quotations />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/quotations/pif">
-        <ProtectedRoute>
-          <Quotations />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/quotations/generate-pif">
-        <ProtectedRoute>
-          <GeneratePIF />
-        </ProtectedRoute>
-      </Route>
+
       <Route path="/settings">
         <ProtectedRoute>
           <Settings />

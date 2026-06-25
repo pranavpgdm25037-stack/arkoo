@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Settings, LogOut, FileText, Layers, Scale, FileSpreadsheet, ClipboardList, FilePlus, Globe } from "lucide-react";
+import { LayoutDashboard, Users, Settings, LogOut, FileSpreadsheet, ClipboardList, Globe } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,36 +49,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </Link>
           </div>
 
-          {/* Quotations category with three independent links */}
-          <div className="space-y-1">
-            <div className="px-3 mb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Quotations
-            </div>
-            <Link href="/quotations/handmade">
-              <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer premium-sidebar-link ${location === '/quotations/handmade' ? 'premium-sidebar-link-active' : ''}`}>
-                <Layers className="w-3.5 h-3.5 shrink-0" />
-                Handmade drawing
-              </div>
-            </Link>
-            <Link href="/quotations/ga">
-              <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer premium-sidebar-link ${location === '/quotations/ga' ? 'premium-sidebar-link-active' : ''}`}>
-                <Scale className="w-3.5 h-3.5 shrink-0" />
-                GA drawing
-              </div>
-            </Link>
-            <Link href="/quotations/pif">
-              <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer premium-sidebar-link ${location === '/quotations/pif' ? 'premium-sidebar-link-active' : ''}`}>
-                <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-                PIF Quotation
-              </div>
-            </Link>
-            <Link href="/quotations/generate-pif">
-              <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer premium-sidebar-link ${location === '/quotations/generate-pif' ? 'premium-sidebar-link-active' : ''}`}>
-                <FilePlus className="w-3.5 h-3.5 shrink-0" />
-                Generate PIF
-              </div>
-            </Link>
-          </div>
+
 
           {/* Project Form Link */}
           <div className="space-y-1.5">
@@ -145,12 +116,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="text-[10px]">Manage Data</span>
           </div>
         </Link>
-        <Link href="/quotations/handmade">
-          <div className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${location.startsWith('/quotations') ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}>
-            <FileText className="w-5 h-5" />
-            <span className="text-[10px]">Quotations</span>
-          </div>
-        </Link>
+
         <Link href="/settings">
           <div className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${location === '/settings' ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}>
             <Settings className="w-5 h-5" />
