@@ -131,7 +131,13 @@ CRITICAL: Do not include any unrelated imagery. It must look like professional m
         throw new Error(errorText);
       }
 
-      const data = await response.json();
+      interface GeminiImageResponse {
+        predictions?: {
+          bytesBase64Encoded?: string;
+        }[];
+      }
+
+      const data = (await response.json()) as GeminiImageResponse;
       if (data.predictions && data.predictions[0] && data.predictions[0].bytesBase64Encoded) {
         base64Image = `data:image/jpeg;base64,${data.predictions[0].bytesBase64Encoded}`;
       } else {

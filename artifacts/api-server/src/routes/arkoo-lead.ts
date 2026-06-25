@@ -1086,14 +1086,12 @@ const handlePifSubmit = async (req: any, res: any) => {
               const [newCust] = await db.insert(customersTable)
                 .values({
                   name: customerName,
-                  contactInfo: emailAddress || phoneNumber || "Not Specified",
-                  leadScore: qualification.score
+                  contactInfo: emailAddress || phoneNumber || "Not Specified"
                 })
                 .returning();
               
               const [newLead] = await db.insert(leadsTable)
                 .values({
-                  customerId: newCust.id,
                   status: "Form Filled",
                   source: "Organic PIF",
                   aiScore: qualification.score,
