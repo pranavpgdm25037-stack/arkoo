@@ -1068,7 +1068,42 @@ const handlePifSubmit = async (req: any, res: any) => {
               }
             }
 
-            if (targetLeadId) {
+            if (!targetLeadId) {
+              console.log("⚠️ Could not match customer record in DB. Creating a new organic PIF lead.");
+              const [newCust] = await db.insert(customersTable)
+                .values({
+                  name: customerName,
+                  contactInfo: emailAddress || phoneNumber || "Not Specified",
+                  leadScore: qualification.score
+                })
+                .returning();
+              
+              const [newLead] = await db.insert(leadsTable)
+                .values({
+                  customerId: newCust.id,
+                  status: "Form Filled",
+                  source: "Organic PIF",
+                  aiScore: qualification.score,
+                  aiCategory: qualification.category,
+                  rawData: JSON.parse(JSON.stringify(data))
+                })
+                .returning();
+
+              targetLeadId = newLead.id;
+
+              await db.update(customersTable)
+                .set({ leadId: targetLeadId })
+                .where(eq(customersTable.id, newCust.id));
+
+              await db.insert(projectsTable)
+                .values({
+                  customerId: newCust.id,
+                  type: projectType,
+                  areaSqft: numericArea > 0 ? numericArea : null,
+                  budget: numericBudget > 0 ? numericBudget.toString() : "0",
+                  timeline: timeline
+                });
+            } else {
               await db.update(leadsTable)
                 .set({ 
                   status: "Form Filled",
@@ -1079,7 +1114,32 @@ const handlePifSubmit = async (req: any, res: any) => {
                 .where(eq(leadsTable.id, targetLeadId));
               console.log(`[PIF STATUS UPDATE] Successfully updated Lead ID ${targetLeadId} to status: Form Filled with AI Score: ${qualification.score} (${qualification.category})`);
 
-              // Send Notification Email to Sales Team
+              // Also update the project record with detailed specifications
+              let customerIdToUpdate = customerRecord?.id;
+              if (!customerIdToUpdate) {
+                const [cust] = await db.select({ id: customersTable.id }).from(customersTable).where(eq(customersTable.leadId, targetLeadId)).limit(1);
+                if (cust) customerIdToUpdate = cust.id;
+              }
+
+              if (customerIdToUpdate) {
+                try {
+                  await db.update(projectsTable)
+                    .set({
+                      type: projectType,
+                      areaSqft: numericArea > 0 ? numericArea : null,
+                      budget: numericBudget > 0 ? numericBudget.toString() : "0",
+                      timeline: timeline
+                    })
+                    .where(eq(projectsTable.customerId, customerIdToUpdate));
+                  console.log(`[PROJECT UPDATE] Successfully updated Project details for Customer ID ${customerIdToUpdate}`);
+                } catch (projErr: any) {
+                  console.error("⚠️ Failed to update project details in DB:", projErr.message);
+                }
+              }
+            }
+
+            // Send Notification Email to Sales Team (Now fires for both updates and new creations)
+            if (targetLeadId) {
               const DASHBOARD_BASE_URL = process.env.DASHBOARD_BASE_URL || "https://joyful-cranachan-b9c054.netlify.app";
               const leadDetailUrl = `${DASHBOARD_BASE_URL}/leads/${targetLeadId}`;
               const salesNotificationHtml = `
@@ -1140,31 +1200,6 @@ const handlePifSubmit = async (req: any, res: any) => {
               } catch (err: any) {
                 console.error(`⚠️ [PIF BACKGROUND] Failed to send notification email to sales team:`, err.message);
               }
-
-              // Also update the project record with detailed specifications
-              let customerIdToUpdate = customerRecord?.id;
-              if (!customerIdToUpdate) {
-                const [cust] = await db.select({ id: customersTable.id }).from(customersTable).where(eq(customersTable.leadId, targetLeadId)).limit(1);
-                if (cust) customerIdToUpdate = cust.id;
-              }
-
-              if (customerIdToUpdate) {
-                try {
-                  await db.update(projectsTable)
-                    .set({
-                      type: projectType,
-                      areaSqft: numericArea > 0 ? numericArea : null,
-                      budget: numericBudget > 0 ? numericBudget.toString() : "0",
-                      timeline: timeline
-                    })
-                    .where(eq(projectsTable.customerId, customerIdToUpdate));
-                  console.log(`[PROJECT UPDATE] Successfully updated Project details for Customer ID ${customerIdToUpdate}`);
-                } catch (projErr: any) {
-                  console.error("⚠️ Failed to update project details in DB:", projErr.message);
-                }
-              }
-            } else {
-              console.log("⚠️ Could not match customer record or lead ID in DB for PIF status update");
             }
           } catch (err: any) {
             console.error("⚠️ Failed to update PIF lead status in database: " + (err.stack || String(err)));
