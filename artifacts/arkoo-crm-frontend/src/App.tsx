@@ -14,7 +14,6 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/protected-route";
 import LandingPage from "@/pages/landing";
 import Integrations from "@/pages/integrations";
-import AdsAnalytics from "@/pages/ads-analytics";
 import ContentStudio from "@/pages/content-studio";
 
 const queryClient = new QueryClient({
@@ -56,11 +55,6 @@ function Router() {
       <Route path="/integrations">
         <ProtectedRoute>
           <Integrations />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/ads-analytics">
-        <ProtectedRoute>
-          <AdsAnalytics />
         </ProtectedRoute>
       </Route>
       <Route path="/content-studio">
