@@ -67,7 +67,7 @@ export default function ContentStudio() {
     setGeneratingImages({});
 
     try {
-      const res = await fetch('/api/lms/content/generate', {
+      const res = await fetch('/api/content/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform, topic, tone, keywords, variantCount: 3 }),
@@ -101,7 +101,7 @@ export default function ContentStudio() {
     setImageErrors(prev => ({ ...prev, [index]: '' }));
 
     try {
-      const res = await fetch('/api/lms/content/generate-image', {
+      const res = await fetch('/api/content/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ caption: variant.caption, platform, visualStyle }),
