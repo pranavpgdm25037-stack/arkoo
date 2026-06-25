@@ -156,7 +156,7 @@ export default function BOMEngine() {
             <CardHeader className="bg-primary/5 border-b">
               <CardTitle className="flex items-center gap-2">
                 <Package className="w-5 h-5 text-primary" />
-                {selectedBOM ? \`BOM: \${selectedBOM.leadName}\` : 'Generated Bill of Materials'}
+                {selectedBOM ? `BOM: ${selectedBOM.leadName}` : 'Generated Bill of Materials'}
               </CardTitle>
               <CardDescription>
                 {selectedBOM ? 'AI generated estimation based on drawing analysis.' : 'Select a lead to view or generate their BOM.'}
