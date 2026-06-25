@@ -65,9 +65,9 @@ Return JSON in exactly this shape:
     }
 
     return res.json(parsed);
-  } catch (err) {
+  } catch (err: any) {
     console.error('Content generation error:', err);
-    return res.status(500).json({ error: 'Failed to generate content. Please try again.' });
+    return res.status(500).json({ error: err.message ? `Gemini API Error: ${err.message}` : 'Failed to generate content. Please try again.' });
   }
 });
 
