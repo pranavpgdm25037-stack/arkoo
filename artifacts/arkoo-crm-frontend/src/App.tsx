@@ -15,6 +15,7 @@ import LandingLeads from "@/pages/landing-leads";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/protected-route";
 import LandingPage from "@/pages/landing";
+import Integrations from "@/pages/integrations";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,6 +75,11 @@ function Router() {
       <Route path="/settings">
         <ProtectedRoute>
           <Settings />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/integrations">
+        <ProtectedRoute>
+          <Integrations />
         </ProtectedRoute>
       </Route>
       <Route path="/leads/:id">

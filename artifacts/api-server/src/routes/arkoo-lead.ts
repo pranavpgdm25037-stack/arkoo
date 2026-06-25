@@ -185,7 +185,8 @@ async function sendCustomerEmail(customerName: string, emailAddress: string, pho
   const queryObj: any = {
     name: customerName,
     email: emailAddress,
-    phone: phoneNumber || ""
+    phone: phoneNumber || "",
+    leadId: leadId
   };
 
   if (extraData) {
@@ -426,7 +427,7 @@ const handleArkooLead = async (req: any, res: any) => {
     try {
       const [lead] = await db.insert(leadsTable).values({
         source: leadSource,
-        rawData: data,
+        rawData: JSON.parse(JSON.stringify(data)),
         aiScore: 0,
         aiCategory: "PENDING",
         status: "New"
@@ -525,7 +526,7 @@ const handleArkooLead = async (req: any, res: any) => {
           customerName, 
           emailAddress, 
           phoneNumber, 
-          ledgerEntry.id, 
+          leadId ? leadId.toString() : ledgerEntry.id, 
           detectBaseUrl(req),
           {
             projectlocation: projectLocation,
@@ -571,7 +572,7 @@ const handleArkooLead = async (req: any, res: any) => {
 
         // Trigger Ethereal fallback for Customer email (Only if NOT from Landing Page)
         if (!isLandingLead) {
-          customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, phoneNumber, ledgerEntry.id, detectBaseUrl(req));
+          customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, phoneNumber, leadId ? leadId.toString() : ledgerEntry.id, detectBaseUrl(req));
 
           if (leadId) {
             await db.update(leadsTable).set({ status: "Form Pending" }).where(eq(leadsTable.id, leadId));
@@ -1031,40 +1032,56 @@ const handlePifSubmit = async (req: any, res: any) => {
         }
 
         // Sync to Postgres DB
-        if (emailAddress || (phoneNumber && phoneNumber !== "Not Specified")) {
+        const leadId = data.leadId || "";
+        let leadIdToUpdate: number | null = null;
+        if (leadId) {
+          const parsedId = parseInt(leadId, 10);
+          if (!isNaN(parsedId)) {
+            leadIdToUpdate = parsedId;
+          }
+        }
+
+        if (emailAddress || (phoneNumber && phoneNumber !== "Not Specified") || leadIdToUpdate) {
           try {
             let customerRecord = null;
-            if (emailAddress) {
-              const records = await db.select()
-                .from(customersTable)
-                .where(ilike(customersTable.contactInfo, `%${emailAddress}%`))
-                .orderBy(desc(customersTable.id))
-                .limit(1);
-              if (records.length > 0) customerRecord = records[0];
-            }
-            if (!customerRecord && phoneNumber && phoneNumber !== "Not Specified") {
-              const records = await db.select()
-                .from(customersTable)
-                .where(ilike(customersTable.contactInfo, `%${phoneNumber}%`))
-                .orderBy(desc(customersTable.id))
-                .limit(1);
-              if (records.length > 0) customerRecord = records[0];
+            let targetLeadId = leadIdToUpdate;
+
+            if (!targetLeadId) {
+              if (emailAddress) {
+                const records = await db.select()
+                  .from(customersTable)
+                  .where(ilike(customersTable.contactInfo, `%${emailAddress}%`))
+                  .orderBy(desc(customersTable.id))
+                  .limit(1);
+                if (records.length > 0) customerRecord = records[0];
+              }
+              if (!customerRecord && phoneNumber && phoneNumber !== "Not Specified") {
+                const records = await db.select()
+                  .from(customersTable)
+                  .where(ilike(customersTable.contactInfo, `%${phoneNumber}%`))
+                  .orderBy(desc(customersTable.id))
+                  .limit(1);
+                if (records.length > 0) customerRecord = records[0];
+              }
+              if (customerRecord && customerRecord.leadId) {
+                targetLeadId = customerRecord.leadId;
+              }
             }
 
-            if (customerRecord && customerRecord.leadId) {
+            if (targetLeadId) {
               await db.update(leadsTable)
                 .set({ 
                   status: "Form Filled",
                   aiScore: qualification.score,
                   aiCategory: qualification.category,
-                  rawData: data
+                  rawData: JSON.parse(JSON.stringify(data))
                 })
-                .where(eq(leadsTable.id, customerRecord.leadId));
-              console.log(`[PIF STATUS UPDATE] Successfully updated Lead ID ${customerRecord.leadId} to status: Form Filled with AI Score: ${qualification.score} (${qualification.category})`);
+                .where(eq(leadsTable.id, targetLeadId));
+              console.log(`[PIF STATUS UPDATE] Successfully updated Lead ID ${targetLeadId} to status: Form Filled with AI Score: ${qualification.score} (${qualification.category})`);
 
               // Send Notification Email to Sales Team
               const DASHBOARD_BASE_URL = process.env.DASHBOARD_BASE_URL || "https://joyful-cranachan-b9c054.netlify.app";
-              const leadDetailUrl = `${DASHBOARD_BASE_URL}/leads/${customerRecord.leadId}`;
+              const leadDetailUrl = `${DASHBOARD_BASE_URL}/leads/${targetLeadId}`;
               const salesNotificationHtml = `
               <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #cbd5e1; border-radius: 8px;">
                 <h2 style="color: #2563eb; margin-top: 0; font-family: sans-serif;">📋 PROJECT SPECIFICATION SUBMITTED</h2>
@@ -1125,23 +1142,32 @@ const handlePifSubmit = async (req: any, res: any) => {
               }
 
               // Also update the project record with detailed specifications
-              try {
-                await db.update(projectsTable)
-                  .set({
-                    type: projectType,
-                    areaSqft: numericArea > 0 ? numericArea : null,
-                    budget: numericBudget > 0 ? numericBudget.toString() : "0",
-                    timeline: timeline
-                  })
-                  .where(eq(projectsTable.customerId, customerRecord.id));
-              } catch (projErr: any) {
-                console.error("⚠️ Failed to update project details in DB:", projErr.message);
+              let customerIdToUpdate = customerRecord?.id;
+              if (!customerIdToUpdate) {
+                const [cust] = await db.select({ id: customersTable.id }).from(customersTable).where(eq(customersTable.leadId, targetLeadId)).limit(1);
+                if (cust) customerIdToUpdate = cust.id;
+              }
+
+              if (customerIdToUpdate) {
+                try {
+                  await db.update(projectsTable)
+                    .set({
+                      type: projectType,
+                      areaSqft: numericArea > 0 ? numericArea : null,
+                      budget: numericBudget > 0 ? numericBudget.toString() : "0",
+                      timeline: timeline
+                    })
+                    .where(eq(projectsTable.customerId, customerIdToUpdate));
+                  console.log(`[PROJECT UPDATE] Successfully updated Project details for Customer ID ${customerIdToUpdate}`);
+                } catch (projErr: any) {
+                  console.error("⚠️ Failed to update project details in DB:", projErr.message);
+                }
               }
             } else {
-              console.log("⚠️ Could not match customer record in DB for PIF status update");
+              console.log("⚠️ Could not match customer record or lead ID in DB for PIF status update");
             }
           } catch (err: any) {
-            console.error("⚠️ Failed to update PIF lead status in database:", err.message);
+            console.error("⚠️ Failed to update PIF lead status in database: " + (err.stack || String(err)));
           }
         }
 

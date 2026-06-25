@@ -11,12 +11,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { LeadStatusSelect } from "@/components/lead-status-select";
 import { ArrowLeft, Mail, Phone, Calendar, Save, Building2, BookOpen, Clock, FileText, MapPin, Wallet, Download, Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+
+function formatBudget(value: any) {
+  if (!value) return "Not Specified";
+  const num = parseInt(value, 10);
+  if (isNaN(num) || num === 0) return value;
+  if (num >= 10000000) {
+    return `₹${(num / 10000000).toFixed(2)} Cr`;
+  }
+  if (num >= 100000) {
+    return `₹${(num / 100000).toFixed(2)} Lakhs`;
+  }
+  return `₹${num.toLocaleString('en-IN')}`;
+}
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: leadData, isLoading } = useGetLead(id as string);
   const lead = leadData as any;
+  console.log("DEBUG - lead detail:", lead);
   
   const updateLead = useUpdateLead();
   const sendFormEmail = useSendFormEmail();
@@ -139,51 +153,7 @@ export default function LeadDetail() {
               </Button>
             )}
             <LeadStatusSelect id={lead.id} initialStatus={lead.status} />
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Generate Quotation
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>AI Generated Quotation (Preview)</DialogTitle>
-                  <DialogDescription>
-                    This is a placeholder quotation format. The actual format will be provided later.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="bg-muted/30 p-6 rounded-md border font-mono text-sm whitespace-pre-wrap">
-                  {`============================================
-              ARKOO PREBUILD
-============================================
-Quotation For: ${lead.name}
-Email: ${lead.email}
-Phone: ${lead.phone}
 
-Date: ${new Date().toLocaleDateString()}
-Quotation Ref: QTN-${lead.id.toString().substring(0, 8).toUpperCase()}
-============================================
-
-ITEM                           QTY    PRICE
---------------------------------------------
-1. Preliminary Design           1   $500.00
-2. 3D Architectural Renders     4   $1,200.00
-3. Prebuild Material Package    1   $15,000.00
-4. Implementation & Setup       1   $3,500.00
-
---------------------------------------------
-SUBTOTAL:                           $20,200.00
-TAX (18%):                          $3,636.00
-============================================
-TOTAL ESTIMATE:                     $23,836.00
-============================================
-
-* Note: This is an AI generated placeholder. 
-Final numbers depend on material selection.`}
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
         </div>
 
@@ -252,31 +222,39 @@ Final numbers depend on material selection.`}
                     <div className="flex items-center text-sm text-muted-foreground mb-1">
                       <MapPin className="w-4 h-4 mr-1" /> Location
                     </div>
-                    <div className="font-medium text-base">{lead.raw_data?.projectLocation || lead.raw_data?.['Project Location'] || 'Not Specified'}</div>
+                    <div className="font-medium text-base">
+                      {lead.location || lead.raw_data?.projectLocation || lead.raw_data?.projectlocation || lead.raw_data?.['Project Location'] || 'Not Specified'}
+                    </div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground mb-1">Type</div>
                     <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-200">
-                      {lead.raw_data?.projectType || lead.raw_data?.['Project Type'] || 'Not Specified'}
+                      {lead.project_type || lead.raw_data?.projectType || lead.raw_data?.projecttype || lead.raw_data?.['Project Type'] || 'Not Specified'}
                     </Badge>
                   </div>
                   <div>
                     <div className="flex items-center text-sm text-muted-foreground mb-1">
                       <FileText className="w-4 h-4 mr-1" /> Area
                     </div>
-                    <div className="font-medium text-base">{lead.raw_data?.projectAreaSqft || lead.raw_data?.['Project Area'] || 'Not Specified'} Sq. Ft.</div>
+                    <div className="font-medium text-base">
+                      {lead.area_sqft || lead.raw_data?.projectAreaSqft || lead.raw_data?.proposedarea || lead.raw_data?.['Project Area'] || 'Not Specified'} Sq. Ft.
+                    </div>
                   </div>
                   <div>
                     <div className="flex items-center text-sm text-muted-foreground mb-1">
                       <Wallet className="w-4 h-4 mr-1" /> Budget
                     </div>
-                    <div className="font-medium text-emerald-600 text-base">{lead.raw_data?.estimatedBudget || lead.raw_data?.['Estimated Budget'] || lead.raw_data?.budget || 'Not Specified'}</div>
+                    <div className="font-medium text-emerald-600 text-base">
+                      {lead.raw_data?.estimatedBudget || lead.raw_data?.['Estimated Budget'] || lead.raw_data?.estimatedbudget || lead.raw_data?.budget || (lead.budget ? formatBudget(lead.budget) : 'Not Specified')}
+                    </div>
                   </div>
                   <div>
                     <div className="flex items-center text-sm text-muted-foreground mb-1">
                       <Calendar className="w-4 h-4 mr-1" /> Timeline
                     </div>
-                    <div className="font-medium text-base">{lead.raw_data?.completionTimeline || lead.raw_data?.['Completion Timeline'] || 'Not Specified'}</div>
+                    <div className="font-medium text-base">
+                      {lead.timeline || lead.raw_data?.completionTimeline || lead.raw_data?.completiontimeline || lead.raw_data?.['Completion Timeline'] || 'Not Specified'}
+                    </div>
                   </div>
                 </div>
               </CardContent>

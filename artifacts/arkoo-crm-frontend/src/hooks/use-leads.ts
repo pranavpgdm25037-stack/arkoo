@@ -19,7 +19,10 @@ const mapLeadData = (leadData: any) => {
     location: leadData.location,
     project_type: leadData.project_type,
     notes: leadData.notes || '',
-    raw_data: leadData.rawData || null
+    raw_data: leadData.rawData || null,
+    area_sqft: leadData.area_sqft,
+    budget: leadData.budget,
+    timeline: leadData.timeline
   };
 };
 
@@ -90,7 +93,23 @@ export function useGetLeadsStats(options?: any) {
   });
 }
 
-export function useGetLead(id: string) {
+export function useGetLead(id: string, options?: any) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`lead-detail-${id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads', filter: `id=eq.${id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['lead', String(id)] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, queryClient]);
+
   return useQuery({
     queryKey: ['lead', id],
     queryFn: async () => {
@@ -98,7 +117,9 @@ export function useGetLead(id: string) {
       if (!response.ok) throw new Error('Failed to fetch lead details');
       const data = await response.json();
       return mapLeadData(data);
-    }
+    },
+    refetchInterval: 3000,
+    ...options,
   });
 }
 

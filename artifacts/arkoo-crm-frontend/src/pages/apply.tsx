@@ -303,6 +303,8 @@ export default function ApplyPage() {
 
   const [emailValidationState, setEmailValidationState] = useState<'idle' | 'loading' | 'valid' | 'invalid'>('idle');
   const [emailValidationMessage, setEmailValidationMessage] = useState('');
+  
+  const [leadId, setLeadId] = useState<string>("");
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -315,6 +317,11 @@ export default function ApplyPage() {
       const areaParam = params.get("area") || "";
       const budgetParam = params.get("budget") || "";
       const timelineParam = params.get("timeline") || "";
+      const leadIdParam = params.get("leadId") || "";
+
+      if (leadIdParam) {
+        setLeadId(leadIdParam);
+      }
 
       if (nameParam || emailParam || phoneParam || locParam) {
         setForm(prev => ({
@@ -405,6 +412,9 @@ export default function ApplyPage() {
       // Use FormData to allow actual file uploads
       const formData = new FormData();
       formData.append("source", "Arkoo LMS Form");
+      if (leadId) {
+        formData.append("leadId", leadId);
+      }
       
       // Append all simple text/number fields
       Object.entries(form).forEach(([key, value]) => {
@@ -415,8 +425,13 @@ export default function ApplyPage() {
         }
       });
 
-      // Submit directly to Render backend to bypass Netlify's 10-second timeout
-      const response = await fetch("https://arkoo-u8sx.onrender.com/api/lms/pif/submit", {
+      // Submit directly to Render backend to bypass Netlify's 10-second timeout in production
+      const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      const submitUrl = isDev 
+        ? "/api/lms/pif/submit"
+        : "https://arkoo-u8sx.onrender.com/api/lms/pif/submit";
+
+      const response = await fetch(submitUrl, {
         method: "POST",
         body: formData,
       });
