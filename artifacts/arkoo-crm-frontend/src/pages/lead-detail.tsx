@@ -278,11 +278,20 @@ export default function LeadDetail() {
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Architect Hired</div>
-                    <div className="font-medium">{lead.raw_data?.hiredarchitect || lead.raw_data?.hasArchitect || 'Not Specified'}</div>
+                    <div className="font-medium">
+                      {lead.raw_data?.hiredarchitect || lead.raw_data?.hasArchitect || 'Not Specified'}
+                      {(lead.raw_data?.architectName || lead.raw_data?.architectContact) && (
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {lead.raw_data.architectName && <span>{lead.raw_data.architectName}</span>}
+                          {lead.raw_data.architectName && lead.raw_data.architectContact && <span> • </span>}
+                          {lead.raw_data.architectContact && <span>{lead.raw_data.architectContact}</span>}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="md:col-span-2 mt-2">
-                    <div className="text-sm text-muted-foreground">Additional Requirements</div>
-                    <div className="font-medium whitespace-pre-wrap">{lead.raw_data?.requirements || lead.raw_data?.additionalrequirements || 'None'}</div>
+                    <div className="text-sm text-muted-foreground">Additional Requirements / Design Notes</div>
+                    <div className="font-medium whitespace-pre-wrap">{lead.raw_data?.additionalrequirements || (lead.raw_data?.requirements && !lead.raw_data.requirements.includes('Project Type:') ? lead.raw_data.requirements : 'None')}</div>
                   </div>
                 </div>
 
