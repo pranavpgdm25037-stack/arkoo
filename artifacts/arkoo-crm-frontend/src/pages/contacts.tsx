@@ -178,7 +178,7 @@ export default function Contacts() {
                           </TableCell>
                           <TableCell className="text-muted-foreground">{customer.address || '-'}</TableCell>
                           <TableCell className="text-muted-foreground font-medium">
-                            {customer.projects?.[0]?.budget || '-'}
+                            {customer.rawData?.estimatedBudget || customer.rawData?.['Estimated Budget'] || customer.rawData?.estimatedbudget || customer.rawData?.budget || customer.projects?.[0]?.budget || '-'}
                           </TableCell>
                           <TableCell className="text-muted-foreground font-mono text-sm text-right">
                             {new Date(customer.created_at).toLocaleDateString()}
@@ -253,7 +253,7 @@ export default function Contacts() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground flex items-center gap-1"><IndianRupee className="w-3 h-3"/> Budget</p>
-                          <p className="font-medium text-emerald-700">{proj.budget ? `${proj.budget}` : 'N/A'}</p>
+                          <p className="font-medium text-emerald-700">{selectedCustomer.rawData?.estimatedBudget || selectedCustomer.rawData?.['Estimated Budget'] || selectedCustomer.rawData?.estimatedbudget || selectedCustomer.rawData?.budget || proj.budget || 'N/A'}</p>
                         </div>
                         <div className="col-span-2">
                           <p className="text-sm text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3"/> Timeline</p>
