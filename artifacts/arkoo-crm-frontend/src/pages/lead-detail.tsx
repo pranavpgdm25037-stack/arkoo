@@ -245,7 +245,7 @@ export default function LeadDetail() {
                       <Wallet className="w-4 h-4 mr-1" /> Budget
                     </div>
                     <div className="font-medium text-emerald-600 text-base">
-                      {lead.raw_data?.estimatedBudget || lead.raw_data?.['Estimated Budget'] || lead.raw_data?.estimatedbudget || lead.raw_data?.budget || (lead.budget ? formatBudget(lead.budget) : 'Not Specified')}
+                      {lead.raw_data?.project?.budget || lead.raw_data?.estimatedBudget || lead.raw_data?.['Estimated Budget'] || lead.raw_data?.estimatedbudget || lead.raw_data?.budget || (lead.budget ? formatBudget(lead.budget) : 'Not Specified')}
                     </div>
                   </div>
                   <div>
