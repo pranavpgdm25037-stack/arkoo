@@ -64,17 +64,16 @@ function getRawFieldValue(lead: any, fieldName: string): string {
   return data[fieldName] || "N/A";
 }
 
-function formatBudget(value: any) {
-  if (!value) return "N/A";
-  const num = parseInt(value, 10);
-  if (isNaN(num) || num === 0) return value;
-  if (num >= 10000000) {
-    return `₹${(num / 10000000).toFixed(2)} Cr`;
-  }
-  if (num >= 100000) {
-    return `₹${(num / 100000).toFixed(2)} Lakhs`;
-  }
-  return `₹${num.toLocaleString('en-IN')}`;
+function getRawBudget(lead: any) {
+  const rawDataValues = [
+    getRawFieldValue(lead, "estimatedBudget"),
+    getRawFieldValue(lead, "Estimated Budget"),
+    getRawFieldValue(lead, "estimatedbudget"),
+    getRawFieldValue(lead, "budget")
+  ];
+  const validRaw = rawDataValues.find(v => v !== "N/A" && v);
+  if (validRaw) return validRaw;
+  return lead.budget && lead.budget !== "0" ? lead.budget : "N/A";
 }
 
 export default function LandingLeads() {
@@ -274,9 +273,9 @@ export default function LandingLeads() {
                                     {lead.area_sqft.toLocaleString()} Sq. Ft.
                                   </span>
                                 ) : null}
-                                {lead.budget && lead.budget !== "0" ? (
+                                {getRawBudget(lead) !== "N/A" ? (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400">
-                                    {formatBudget(lead.budget)}
+                                    {getRawBudget(lead)}
                                   </span>
                                 ) : null}
                               </div>
@@ -385,7 +384,7 @@ export default function LandingLeads() {
                   <div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1"><IndianRupee className="w-3.5 h-3.5"/> Estimated Budget</p>
                     <p className="font-semibold text-sm mt-0.5 text-emerald-600">
-                      {formatBudget(selectedLead.budget)}
+                      {getRawBudget(selectedLead)}
                     </p>
                   </div>
                   <div className="col-span-2">

@@ -53,7 +53,7 @@ export default function Contacts() {
         new Date(customer.created_at).toLocaleDateString(),
         proj.type || "-",
         proj.area_sqft || proj.areaSqft || "-",
-        proj.budget || "-",
+        raw.estimatedBudget || raw['Estimated Budget'] || raw.estimatedbudget || raw.budget || proj.budget || "-",
         proj.timeline || "-",
         raw.landownership || "-",
         raw.govapprovals || "-",
