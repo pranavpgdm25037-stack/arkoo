@@ -346,4 +346,23 @@ router.patch("/leads/:id", async (req, res) => {
   }
 });
 
+router.delete("/leads/:id", async (req, res) => {
+  try {
+    const leadId = parseInt(req.params.id, 10);
+    if (isNaN(leadId)) {
+      res.status(400).json({ error: "Invalid lead ID" });
+      return;
+    }
+    
+    // The database schema might have cascade delete or we might need to delete related records first.
+    // Assuming Drizzle allows deleting the lead and cascade works, or we delete lead directly.
+    await db.delete(leadsTable).where(eq(leadsTable.id, leadId));
+    
+    res.json({ success: true, message: "Lead deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting lead:", error);
+    res.status(500).json({ error: "Failed to delete lead" });
+  }
+});
+
 export default router;

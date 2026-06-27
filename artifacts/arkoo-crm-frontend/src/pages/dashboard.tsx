@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { useListLeads, useGetLeadsStats } from "@/hooks/use-leads";
+import { useListLeads, useGetLeadsStats, useDeleteLead } from "@/hooks/use-leads";
 import { supabase } from "@/lib/supabase";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { LeadStatusSelect } from "@/components/lead-status-select";
-import { Search, Flame, Thermometer, Snowflake, TrendingUp, Users, Zap, PlusCircle, FileSpreadsheet } from "lucide-react";
+import { Search, Flame, Thermometer, Snowflake, TrendingUp, Users, Zap, PlusCircle, FileSpreadsheet, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +48,7 @@ const itemVariants = {
 
 export default function Dashboard() {
   const [search, setSearch] = useState("");
+  const deleteLeadMutation = useDeleteLead();
   const [labelFilter, setLabelFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [sourceFilter, setSourceFilter] = useState<string>("All");
@@ -366,6 +367,7 @@ export default function Dashboard() {
                     <TableHead className="font-semibold text-muted-foreground">Status</TableHead>
                     <TableHead className="font-semibold text-muted-foreground">Source</TableHead>
                     <TableHead className="font-semibold text-muted-foreground">Created</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground text-center">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -380,11 +382,12 @@ export default function Dashboard() {
                           <TableCell><Skeleton className="h-8 w-24 rounded" /></TableCell>
                           <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                           <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                          <TableCell><Skeleton className="h-8 w-8 rounded-md mx-auto" /></TableCell>
                         </TableRow>
                       ))
                     ) : filteredLeads?.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-64">
+                        <TableCell colSpan={8} className="h-64">
                           <div className="flex flex-col items-center justify-center text-muted-foreground h-full space-y-3">
                             <div className="p-4 rounded-full bg-muted/50">
                               <Search className="w-8 h-8 opacity-50" />
@@ -432,6 +435,28 @@ export default function Dashboard() {
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground font-mono">
                               {new Date(lead.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                                onClick={() => {
+                                  if (confirm("Are you sure you want to delete this lead?")) {
+                                    deleteLeadMutation.mutate(lead.id, {
+                                      onSuccess: () => {
+                                        toast({ title: "Lead deleted successfully" });
+                                      },
+                                      onError: () => {
+                                        toast({ title: "Failed to delete lead", variant: "destructive" });
+                                      }
+                                    });
+                                  }
+                                }}
+                                disabled={deleteLeadMutation.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </TableCell>
                           </motion.tr>
                         ))}

@@ -173,3 +173,26 @@ export function useSendFormEmail() {
     }
   });
 }
+export function useDeleteLead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await fetch(`/api/leads/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete lead');
+      }
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['landing-leads'] });
+    }
+  });
+}
