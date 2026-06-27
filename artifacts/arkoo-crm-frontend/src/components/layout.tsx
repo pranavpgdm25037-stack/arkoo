@@ -23,7 +23,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="h-14 premium-sidebar-logo flex items-center px-6 shrink-0">
           <div className="flex items-center gap-2.5 font-bold text-lg tracking-tight text-white">
             <img src="/logo.png" alt="Arkoo Logo" className="h-6 w-auto object-contain rounded brightness-125" />
-            <span className="bg-gradient-to-r from-white via-indigo-200 to-indigo-100 bg-clip-text text-transparent">Arkoo CRM</span>
+            <span className="bg-gradient-to-r from-white via-indigo-200 to-indigo-100 bg-clip-text text-transparent">Arkoo LMS</span>
           </div>
         </div>
         
@@ -97,7 +97,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <header className="h-14 border-b bg-card flex items-center px-4 md:hidden shrink-0 no-print">
           <div className="flex items-center gap-2 font-bold text-lg text-primary">
             <img src="/logo.png" alt="Arkoo Logo" className="h-6 w-auto object-contain rounded" />
-            Arkoo CRM
+            Arkoo LMS
           </div>
         </header>
         
