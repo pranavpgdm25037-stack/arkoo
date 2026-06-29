@@ -51,6 +51,12 @@ function formatBudget(val: any): string {
   return str;
 }
 
+function ensureAbsoluteUrl(url: string) {
+  if (!url) return "#";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `https://${url}`;
+}
+
 export default function Contacts() {
   const { data: customers, isLoading } = useListCustomers();
   const [search, setSearch] = useState("");
@@ -338,7 +344,7 @@ export default function Contacts() {
                             <p className="font-medium text-sm capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
                           </div>
                         </div>
-                        <a href={url} target="_blank" rel="noopener noreferrer">
+                        <a href={ensureAbsoluteUrl(url)} target="_blank" rel="noopener noreferrer">
                           <Button variant="outline" size="sm" className="gap-2">
                             <Eye className="w-4 h-4" /> View
                           </Button>

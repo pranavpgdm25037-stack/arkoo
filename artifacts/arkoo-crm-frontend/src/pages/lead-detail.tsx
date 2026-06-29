@@ -26,6 +26,12 @@ function formatBudget(value: any) {
   return `₹${num.toLocaleString('en-IN')}`;
 }
 
+function ensureAbsoluteUrl(url: string) {
+  if (!url) return "#";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")) return url;
+  return `https://${url}`;
+}
+
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: leadData, isLoading } = useGetLead(id as string);
@@ -303,7 +309,8 @@ export default function LeadDetail() {
                   {lead.raw_data?.uploadedDocuments && Object.keys(lead.raw_data.uploadedDocuments).length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {Object.entries(lead.raw_data.uploadedDocuments).map(([key, url]: [string, any]) => {
-                        const fullUrl = url.startsWith('/') ? `https://arkoo-u8sx.onrender.com${url}` : url;
+                        let fullUrl = url.startsWith('/') ? `https://arkoo-u8sx.onrender.com${url}` : url;
+                        fullUrl = ensureAbsoluteUrl(fullUrl);
                         const isImage = fullUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i);
                         
                         return (
