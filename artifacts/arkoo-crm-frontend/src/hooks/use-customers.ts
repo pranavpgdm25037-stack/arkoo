@@ -48,7 +48,7 @@ export function useListCustomers() {
       
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads')
-        .select('id, rawData');
+        .select('id, raw_data');
         
       if (leadsError) {
         console.error("Leads query error:", leadsError);
@@ -80,7 +80,7 @@ export function useListCustomers() {
           address: c.address,
           created_at: c.created_at,
           projects: customerProjects,
-          rawData: relatedLead?.rawData || {}
+          rawData: relatedLead?.raw_data || {}
         };
       });
     }
