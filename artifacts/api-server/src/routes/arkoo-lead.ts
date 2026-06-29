@@ -9,22 +9,10 @@ import multer from "multer";
 
 const router = Router();
 
-// Configure Multer for File Uploads
+// Configure Multer for File Uploads (Memory Storage for DB Base64)
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const uploadDir = path.resolve(process.cwd(), "../../uploads");
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-      const safeName = (file.originalname || 'document').replace(/[^a-zA-Z0-9.\-]/g, '_');
-      cb(null, `${Date.now()}_${safeName}`);
-    }
-  }),
-  limits: { fileSize: 50 * 1024 * 1024 } // 50 MB limit per file
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit per file
 });
 
 // ============================================================
@@ -638,24 +626,16 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
     const govapprovals = getFieldValue(data, ["govapprovals"], "Not Specified");
     const hiredarchitect = getFieldValue(data, ["hiredarchitect"], "Not Specified");
 
-    // Handle File Uploads (Base64 -> Disk)
+    // Handle File Uploads (Base64 string direct to DB)
     const uploadedFiles: Record<string, string> = {};
     if (data.files && typeof data.files === 'object') {
-      const uploadDir = path.resolve(process.cwd(), "../../uploads");
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
       for (const [key, fileData] of Object.entries(data.files) as any) {
         if (fileData && typeof fileData === 'object' && fileData.base64) {
           try {
-            const buffer = Buffer.from(fileData.base64, 'base64');
-            const safeName = (fileData.name || 'document').replace(/[^a-zA-Z0-9.\-]/g, '_');
-            const filename = `${Date.now()}_${safeName}`;
-            const filepath = path.join(uploadDir, filename);
-            fs.writeFileSync(filepath, buffer);
-            uploadedFiles[key] = `/uploads/${filename}`;
+            const mimeType = fileData.mimetype || fileData.type || "application/pdf";
+            uploadedFiles[key] = `data:${mimeType};base64,${fileData.base64}`;
           } catch (e) {
-            console.error(`Failed to save file ${key}:`, e);
+            console.error(`Failed to parse file ${key}:`, e);
           }
         }
       }
@@ -976,13 +956,17 @@ const handlePifSubmit = async (req: any, res: any) => {
         const timeline = getFieldValue(data, ["completiontimeline", "timeline", "duration"], "Not Specified");
         const additionalRequirements = getFieldValue(data, ["additionalrequirements", "requirements", "comments", "notes", "message"], "None");
 
-        // Handle File Uploads via Multer
+        // Handle File Uploads via Multer (Convert to Base64 data URLs)
         const uploadedFiles: Record<string, string> = {};
         if (req.files) {
           for (const [key, filesArray] of Object.entries(req.files) as any) {
              const fileArray = filesArray as Express.Multer.File[];
              if (fileArray && fileArray.length > 0) {
-                uploadedFiles[key] = `/uploads/${fileArray[0].filename}`;
+                const file = fileArray[0];
+                if (file.buffer) {
+                  const base64Str = file.buffer.toString("base64");
+                  uploadedFiles[key] = `data:${file.mimetype || 'application/pdf'};base64,${base64Str}`;
+                }
              }
           }
         }

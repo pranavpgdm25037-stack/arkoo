@@ -28,9 +28,18 @@ function formatBudget(value: any) {
 
 function ensureAbsoluteUrl(url: string) {
   if (!url) return "#";
+  if (url.startsWith("data:")) return url;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("uploads/")) return `https://arkoo-u8sx.onrender.com/${url}`;
-  if (url.startsWith("/uploads/")) return `https://arkoo-u8sx.onrender.com${url}`;
+  
+  const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const baseUrl = isDev ? "" : "https://arkoo-u8sx.onrender.com";
+
+  if (url.startsWith("uploads/")) return `${baseUrl}/${url}`;
+  if (url.startsWith("/uploads/")) return `${baseUrl}${url}`;
+  
+  // Fallback for filenames without uploads/ prefix
+  if (!url.includes("/")) return `${baseUrl}/uploads/${url}`;
+
   return `https://${url}`;
 }
 
@@ -308,46 +317,84 @@ export default function LeadDetail() {
                     <Download className="w-5 h-5 text-emerald-600" />
                     <h3 className="text-base font-semibold">Uploaded Documents</h3>
                   </div>
-                  {lead.raw_data?.uploadedDocuments && Object.keys(lead.raw_data.uploadedDocuments).length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {Object.entries(lead.raw_data.uploadedDocuments).map(([key, url]: [string, any]) => {
-                        let fullUrl = url.startsWith('/') ? `https://arkoo-u8sx.onrender.com${url}` : url;
-                        fullUrl = ensureAbsoluteUrl(fullUrl);
-                        const isImage = fullUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i);
-                        
-                        return (
-                          <div key={key} className="flex flex-col justify-between p-3 border rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
-                            <div className="flex items-center mb-2">
-                              <FileText className="w-4 h-4 mr-2 text-blue-500" />
-                              <span className="text-sm font-semibold text-slate-700 capitalize">
-                                {key.replace(/([A-Z])/g, ' $1').trim()}
-                              </span>
-                            </div>
-                            
-                            {isImage ? (
-                              <div className="relative group w-full h-32 rounded-lg overflow-hidden border bg-white mt-1 mb-3">
-                                <img src={fullUrl} alt={key} className="w-full h-full object-cover" />
-                                <a href={fullUrl} target="_blank" rel="noreferrer" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white text-xs font-medium gap-1 cursor-pointer backdrop-blur-[2px]">
-                                  <Download className="w-5 h-5" />
-                                  View / Download
-                                </a>
-                              </div>
-                            ) : (
-                              <div className="w-full h-12 bg-white border rounded-lg mt-1 mb-3 flex items-center justify-center text-xs text-slate-400">
-                                Document File
-                              </div>
-                            )}
+                  {(() => {
+                    // Collect documents from all possible storage locations
+                    const allDocs: Record<string, string> = {
+                      ...(lead.raw_data?.uploadedDocuments || {}),
+                      ...(lead.raw_data?.googleFormPayload?.uploadedDocuments || {}),
+                      ...(lead.raw_data?.files || {}),
+                    };
+                    const docEntries = Object.entries(allDocs).filter(([, url]) => url && String(url).length > 0);
 
-                            <a href={fullUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center w-full py-1.5 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors">
-                              <Download className="w-3 h-3 mr-1" /> Open File
-                            </a>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground italic">No documents uploaded.</div>
-                  )}
+                    if (docEntries.length === 0) {
+                      return <div className="text-sm text-muted-foreground italic">No documents uploaded.</div>;
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {docEntries.map(([key, rawUrl]: [string, any]) => {
+                          const url = String(rawUrl);
+                          const fullUrl = ensureAbsoluteUrl(url);
+
+                          // Determine type: data: URL uses MIME, else check extension
+                          let isImage = false;
+                          let isPdf = false;
+                          let displayName = key.replace(/([A-Z])/g, ' $1').trim();
+
+                          if (url.startsWith('data:')) {
+                            const mimeMatch = url.match(/^data:([^;]+);/);
+                            const mime = mimeMatch ? mimeMatch[1] : '';
+                            isImage = mime.startsWith('image/');
+                            isPdf = mime === 'application/pdf';
+                          } else {
+                            // Extract filename from /uploads/1782715_Quote.pdf
+                            const pathParts = url.split('/');
+                            const filename = pathParts[pathParts.length - 1];
+                            if (filename) {
+                              // Strip timestamp prefix (e.g. 1782715857465_) for a cleaner label
+                              const cleaned = filename.replace(/^\d+_/, '').replace(/_/g, ' ');
+                              displayName = cleaned || displayName;
+                            }
+                            isImage = /\.(jpeg|jpg|gif|png|webp|svg)$/i.test(url);
+                            isPdf = /\.pdf$/i.test(url);
+                          }
+
+                          return (
+                            <div key={key} className="flex flex-col justify-between p-3 border rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
+                              <div className="flex items-center mb-2 gap-2">
+                                <FileText className="w-4 h-4 shrink-0 text-blue-500" />
+                                <span className="text-sm font-semibold text-slate-700 truncate capitalize" title={displayName}>
+                                  {displayName}
+                                </span>
+                              </div>
+
+                              {isImage ? (
+                                <div className="relative group w-full h-32 rounded-lg overflow-hidden border bg-white mt-1 mb-3">
+                                  <img src={fullUrl} alt={key} className="w-full h-full object-cover" />
+                                  <a href={fullUrl} target="_blank" rel="noreferrer" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white text-xs font-medium gap-1 cursor-pointer backdrop-blur-[2px]">
+                                    <Download className="w-5 h-5" />
+                                    View / Download
+                                  </a>
+                                </div>
+                              ) : isPdf ? (
+                                <div className="w-full h-12 bg-red-50 border border-red-200 rounded-lg mt-1 mb-3 flex items-center justify-center gap-2 text-xs text-red-500 font-medium">
+                                  <FileText className="w-4 h-4" /> PDF Document
+                                </div>
+                              ) : (
+                                <div className="w-full h-12 bg-white border rounded-lg mt-1 mb-3 flex items-center justify-center text-xs text-slate-400">
+                                  Document File
+                                </div>
+                              )}
+
+                              <a href={fullUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center w-full py-1.5 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors">
+                                <Download className="w-3 h-3 mr-1" /> Open / Download
+                              </a>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>

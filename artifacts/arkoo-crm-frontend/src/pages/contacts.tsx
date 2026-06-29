@@ -53,9 +53,18 @@ function formatBudget(val: any): string {
 
 function ensureAbsoluteUrl(url: string) {
   if (!url) return "#";
+  if (url.startsWith("data:")) return url;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("uploads/")) return `https://arkoo-u8sx.onrender.com/${url}`;
-  if (url.startsWith("/uploads/")) return `https://arkoo-u8sx.onrender.com${url}`;
+  
+  const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const baseUrl = isDev ? "" : "https://arkoo-u8sx.onrender.com";
+
+  if (url.startsWith("uploads/")) return `${baseUrl}/${url}`;
+  if (url.startsWith("/uploads/")) return `${baseUrl}${url}`;
+  
+  // Fallback for filenames without uploads/ prefix
+  if (!url.includes("/")) return `${baseUrl}/uploads/${url}`;
+
   return `https://${url}`;
 }
 
