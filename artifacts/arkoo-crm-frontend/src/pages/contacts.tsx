@@ -54,6 +54,8 @@ function formatBudget(val: any): string {
 function ensureAbsoluteUrl(url: string) {
   if (!url) return "#";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("uploads/")) return `https://arkoo-u8sx.onrender.com/${url}`;
+  if (url.startsWith("/uploads/")) return `https://arkoo-u8sx.onrender.com${url}`;
   return `https://${url}`;
 }
 
