@@ -348,6 +348,9 @@ const handleArkooLead = async (req: any, res: any) => {
     const projectAreaSqft = parseInt(data['Project Area'] || data.projectAreaSqft) || parsed.projectAreaSqft;
     const estimatedBudget = String(data['Estimated Budget'] || data.estimatedBudget || parsed.estimatedBudget).trim();
     const completionTimeline = String(data['Completion Timeline'] || data.completionTimeline || parsed.completionTimeline).trim();
+    
+    // Explicitly store the original string in data so it's preserved in rawData for the frontend
+    data.estimatedBudget = estimatedBudget;
 
     // Convert estimated budget string to number if possible for AI qualification
     const numericBudget = parseFloat(estimatedBudget.replace(/[^0-9.]/g, '')) || 0;
@@ -625,6 +628,10 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
     const projectType = getFieldValue(data, ["projecttype", "type", "structuretype"], "PEB Structure");
     const proposedArea = getFieldValue(data, ["proposedarea", "area", "areasqft", "size"], "Not Specified");
     const estimatedBudget = getFieldValue(data, ["estimatedbudget", "budget", "cost"], "Not Specified");
+    
+    // Explicitly store the original string in data so it's preserved in rawData for the frontend
+    data.estimatedBudget = estimatedBudget;
+
     const timeline = getFieldValue(data, ["completiontimeline", "timeline", "duration"], "Not Specified");
     const additionalRequirements = getFieldValue(data, ["additionalrequirements", "requirements", "comments", "notes", "message"], "None");
     const landownership = getFieldValue(data, ["landownership"], "Not Specified");
