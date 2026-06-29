@@ -66,7 +66,7 @@ function normalizeLeadSource(raw: string): string {
 // Configure Nodemailer
 const createTransporter = () => {
   const user = process.env.GMAIL_USER || 'arkooprebuildai@gmail.com';
-  const pass = (process.env.GMAIL_APP_PASSWORD || 'tqphvevoalzsdbvb').replace(/\s/g, "");
+  const pass = (process.env.GMAIL_APP_PASSWORD || 'suzvwpodhtuencza').replace(/\s/g, "");
 
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
