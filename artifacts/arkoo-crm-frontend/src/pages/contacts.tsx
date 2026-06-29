@@ -22,6 +22,35 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
 };
 
+function formatBudget(val: any): string {
+  if (!val || val === "-" || val === "0") return "N/A";
+  const str = String(val).trim();
+  
+  // If it already has text like Lakhs or Crores, it's already properly formatted
+  if (/[a-zA-Z]/.test(str) && str.toLowerCase() !== 'n/a') return str;
+  
+  // Handle specific backend compressed codes
+  if (str === "15") return "Under 15 Lakhs";
+  if (str === "1530") return "15 - 30 Lakhs";
+  if (str === "3050") return "30 - 50 Lakhs";
+  if (str === "501") return "50 Lakhs - 1 Crore";
+  if (str === "12") return "1 - 2 Crores";
+  if (str === "2") return "Above 2 Crores";
+  
+  // Handle raw large numbers
+  const num = parseFloat(str);
+  if (!isNaN(num) && num > 1000) {
+    if (num >= 10000000) {
+      return `${num / 10000000} Crore${num / 10000000 > 1 ? 's' : ''}`;
+    } else if (num >= 100000) {
+      return `${num / 100000} Lakh${num / 100000 > 1 ? 's' : ''}`;
+    } else {
+      return num.toLocaleString('en-IN');
+    }
+  }
+  return str;
+}
+
 export default function Contacts() {
   const { data: customers, isLoading } = useListCustomers();
   const [search, setSearch] = useState("");
@@ -53,7 +82,7 @@ export default function Contacts() {
         new Date(customer.created_at).toLocaleDateString(),
         proj.type || "-",
         proj.area_sqft || proj.areaSqft || "-",
-        raw.estimatedBudget || raw['Estimated Budget'] || raw.estimatedbudget || raw.budget || proj.budget || "-",
+        formatBudget(raw.estimatedBudget || raw['Estimated Budget'] || raw.estimatedbudget || raw.budget || proj.budget || "-"),
         proj.timeline || "-",
         raw.landownership || "-",
         raw.govapprovals || "-",
@@ -178,7 +207,7 @@ export default function Contacts() {
                           </TableCell>
                           <TableCell className="text-muted-foreground">{customer.address || '-'}</TableCell>
                           <TableCell className="text-muted-foreground font-medium">
-                            {customer.rawData?.project?.budget || customer.rawData?.estimatedBudget || customer.rawData?.['Estimated Budget'] || customer.rawData?.estimatedbudget || customer.rawData?.budget || customer.projects?.[0]?.budget || '-'}
+                            {formatBudget(customer.rawData?.project?.budget || customer.rawData?.estimatedBudget || customer.rawData?.['Estimated Budget'] || customer.rawData?.estimatedbudget || customer.rawData?.budget || customer.projects?.[0]?.budget || '-')}
                           </TableCell>
                           <TableCell className="text-muted-foreground font-mono text-sm text-right">
                             {new Date(customer.created_at).toLocaleDateString()}
@@ -253,7 +282,7 @@ export default function Contacts() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground flex items-center gap-1"><IndianRupee className="w-3 h-3"/> Budget</p>
-                          <p className="font-medium text-emerald-700">{selectedCustomer.rawData?.project?.budget || selectedCustomer.rawData?.estimatedBudget || selectedCustomer.rawData?.['Estimated Budget'] || selectedCustomer.rawData?.estimatedbudget || selectedCustomer.rawData?.budget || proj.budget || 'N/A'}</p>
+                          <p className="font-medium text-emerald-700">{formatBudget(selectedCustomer.rawData?.project?.budget || selectedCustomer.rawData?.estimatedBudget || selectedCustomer.rawData?.['Estimated Budget'] || selectedCustomer.rawData?.estimatedbudget || selectedCustomer.rawData?.budget || proj.budget || 'N/A')}</p>
                         </div>
                         <div className="col-span-2">
                           <p className="text-sm text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3"/> Timeline</p>

@@ -64,6 +64,35 @@ function getRawFieldValue(lead: any, fieldName: string): string {
   return data[fieldName] || "N/A";
 }
 
+function formatBudget(val: any): string {
+  if (!val || val === "-" || val === "0") return "N/A";
+  const str = String(val).trim();
+  
+  // If it already has text like Lakhs or Crores, it's already properly formatted
+  if (/[a-zA-Z]/.test(str) && str.toLowerCase() !== 'n/a') return str;
+  
+  // Handle specific backend compressed codes
+  if (str === "15") return "Under 15 Lakhs";
+  if (str === "1530") return "15 - 30 Lakhs";
+  if (str === "3050") return "30 - 50 Lakhs";
+  if (str === "501") return "50 Lakhs - 1 Crore";
+  if (str === "12") return "1 - 2 Crores";
+  if (str === "2") return "Above 2 Crores";
+  
+  // Handle raw large numbers
+  const num = parseFloat(str);
+  if (!isNaN(num) && num > 1000) {
+    if (num >= 10000000) {
+      return `${num / 10000000} Crore${num / 10000000 > 1 ? 's' : ''}`;
+    } else if (num >= 100000) {
+      return `${num / 100000} Lakh${num / 100000 > 1 ? 's' : ''}`;
+    } else {
+      return num.toLocaleString('en-IN');
+    }
+  }
+  return str;
+}
+
 function getRawBudget(lead: any) {
   const rawDataValues = [
     getRawFieldValue(lead, "estimatedBudget"),
@@ -72,8 +101,8 @@ function getRawBudget(lead: any) {
     getRawFieldValue(lead, "budget")
   ];
   const validRaw = rawDataValues.find(v => v !== "N/A" && v);
-  if (validRaw) return validRaw;
-  return lead.budget && lead.budget !== "0" ? lead.budget : "N/A";
+  if (validRaw) return formatBudget(validRaw);
+  return formatBudget(lead.budget && lead.budget !== "0" ? lead.budget : "N/A");
 }
 
 export default function LandingLeads() {
