@@ -688,7 +688,6 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
           numericBudget = val;
         }
       }
-      }
     }
 
     // 🚀 RESPOND IMMEDIATELY TO ELIMINATE LATENCY
