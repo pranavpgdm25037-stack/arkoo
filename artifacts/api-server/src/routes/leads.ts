@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, leadsTable, customersTable, projectsTable } from "@workspace/db";
-import { eq, ilike, sql, and, desc } from "drizzle-orm";
+import { db, leadsTable, customersTable, projectsTable, quotationsTable } from "@workspace/db";
+import { eq, ilike, sql, and, desc, inArray } from "drizzle-orm";
 import * as XLSX from "xlsx";
 
 const router = Router();
@@ -354,8 +354,29 @@ router.delete("/leads/:id", async (req, res) => {
       return;
     }
     
-    // The database schema might have cascade delete or we might need to delete related records first.
-    // Assuming Drizzle allows deleting the lead and cascade works, or we delete lead directly.
+    // Manual cascade delete
+    // Find associated customers
+    const customers = await db.select({ id: customersTable.id }).from(customersTable).where(eq(customersTable.leadId, leadId));
+    const customerIds = customers.map(c => c.id);
+    
+    if (customerIds.length > 0) {
+      // Find associated projects
+      const projects = await db.select({ id: projectsTable.id }).from(projectsTable).where(inArray(projectsTable.customerId, customerIds));
+      const projectIds = projects.map(p => p.id);
+      
+      if (projectIds.length > 0) {
+        // Delete quotations associated with these projects
+        await db.delete(quotationsTable).where(inArray(quotationsTable.projectId, projectIds));
+        
+        // Delete projects
+        await db.delete(projectsTable).where(inArray(projectsTable.customerId, customerIds));
+      }
+      
+      // Delete customers
+      await db.delete(customersTable).where(inArray(customersTable.id, customerIds));
+    }
+    
+    // Delete lead directly
     await db.delete(leadsTable).where(eq(leadsTable.id, leadId));
     
     res.json({ success: true, message: "Lead deleted successfully" });
