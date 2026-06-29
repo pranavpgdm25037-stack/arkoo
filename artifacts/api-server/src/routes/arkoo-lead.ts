@@ -401,7 +401,7 @@ const handleArkooLead = async (req: any, res: any) => {
       estimatedBudget,
       aiScore: 0,
       aiCategory: "PENDING",
-      status: "New",
+      status: "Form Pending",
       formSubmitted: false,
       qualification: null,
       timestamp: new Date().toISOString(),
@@ -433,7 +433,7 @@ const handleArkooLead = async (req: any, res: any) => {
         rawData: JSON.parse(JSON.stringify(data)),
         aiScore: 0,
         aiCategory: "PENDING",
-        status: "New"
+        status: "Form Pending"
       }).returning();
 
       leadId = lead.id;
@@ -688,10 +688,20 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
           numericBudget = val;
         }
       }
+      }
     }
 
-    // Call the AI Qualification engine using the detailed Google Form values
-    const qualification = await qualifyLead({
+    // 🚀 RESPOND IMMEDIATELY TO ELIMINATE LATENCY
+    res.status(200).json({
+      success: true,
+      message: "Form submission received and processing started in the background."
+    });
+
+    // BACKGROUND PROCESSING (AI Qualification, Emails, DB Update)
+    (async () => {
+      try {
+        // Call the AI Qualification engine using the detailed Google Form values
+        const qualification = await qualifyLead({
       source: "Google Forms",
       name: customerName,
       contactInfo: phoneNumber || emailAddress || "Not Specified",
@@ -740,7 +750,7 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
         console.log(`[GOOGLE FORM SUCCESS] Thank you email sent to customer at ${emailAddress}`);
         customerEmailSent = true;
       } catch (err: any) {
-        console.error(`⚠️ Failed to send thank you email to ${emailAddress}:`, err.message);
+        console.error(`⚠️ Failed to send thank you email to ${emailAddress}:`, err.message, err);
       }
     }
 
@@ -781,7 +791,7 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
       </p>
 
       <p style="font-weight: bold; color: #2563eb; margin-top: 25px;">
-        Action Required: Please go through their inputs and the AI Score, update their records in the LMS CRM, and connect with the customer as soon as possible.
+        Action Required: Please go through their inputs and the AI Score, update their records in the LMS CRM, connect with the customer as soon as possible, and please review the project specifications.
       </p>
 
       <p style="font-size: 13px; color: #334155; margin-top: 20px; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
@@ -792,25 +802,25 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
     </div>
     `;
 
-    try {
-      const transporter = createTransporter();
-      await transporter.sendMail({
-        from: `"ARKOO Pre-Build AI" <${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>`,
-        to: process.env.SALES_REP_EMAIL || 'newleadnotification001@gmail.com',
-        replyTo: process.env.GMAIL_USER || 'arkooprebuildai@gmail.com',
-        subject: `[FORM FILLED] Project PIF Submitted: ${customerName} (${projectType})`,
-        html: salesNotificationHtml,
-        headers: {
-          'X-Priority': '1',
-          'X-MSMail-Priority': 'High',
-          'Importance': 'High'
-        }
-      });
-      console.log(`[GOOGLE FORM SUCCESS] Notification email sent to sales representative`);
-      salesEmailSent = true;
-    } catch (err: any) {
-      console.error(`⚠️ Failed to send notification email to sales team:`, err.message);
-    }
+      try {
+        const transporter = createTransporter();
+        await transporter.sendMail({
+          from: `"ARKOO Pre-Build AI" <${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>`,
+          to: process.env.SALES_REP_EMAIL || 'newleadnotification001@gmail.com',
+          replyTo: process.env.GMAIL_USER || 'arkooprebuildai@gmail.com',
+          subject: `[FORM FILLED] Project PIF Submitted: ${customerName} (${projectType})`,
+          html: salesNotificationHtml,
+          headers: {
+            'X-Priority': '1',
+            'X-MSMail-Priority': 'High',
+            'Importance': 'High'
+          }
+        });
+        console.log(`[GOOGLE FORM SUCCESS] Notification email sent to sales representative`);
+        salesEmailSent = true;
+      } catch (err: any) {
+        console.error(`⚠️ Failed to send notification email to sales team:`, err.message, err);
+      }
 
     // 3. Update Lead Status and AI score in DB (idempotent lookup by email or phone)
     let leadStatusUpdated = false;
@@ -923,16 +933,12 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
     } catch (err: any) {
       console.error("⚠️ [ARKOO LEADS LEDGER] Failed to update local ledger:", err.message);
     }
- 
-    res.status(200).json({
-      success: true,
-      message: "Form submission processed successfully.",
-      customerEmailSent,
-      salesEmailSent,
-      leadStatusUpdated,
-      aiScore: qualification.score,
-      aiCategory: qualification.category
-    });
+
+      } catch (backgroundError: any) {
+        console.error("⚠️ Error during background processing for Google Form submission:", backgroundError.message);
+      }
+    })(); // End of background IIFE
+
   } catch (error: any) {
     console.error("⚠️ Error handling Google Form submission webhook:", error.message);
     res.status(500).json({ error: "Internal Server Error during Google Form processing" });
