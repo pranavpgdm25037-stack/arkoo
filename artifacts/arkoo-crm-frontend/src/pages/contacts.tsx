@@ -355,11 +355,18 @@ export default function Contacts() {
                             <p className="font-medium text-sm capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
                           </div>
                         </div>
-                        <a href={ensureAbsoluteUrl(url)} target="_blank" rel="noopener noreferrer">
-                          <Button variant="outline" size="sm" className="gap-2">
-                            <Eye className="w-4 h-4" /> View
-                          </Button>
-                        </a>
+                        {(() => {
+                          const fullUrl = ensureAbsoluteUrl(url);
+                          const isDataUrl = fullUrl.startsWith('data:');
+                          const displayName = key.replace(/([A-Z])/g, ' $1').trim();
+                          return (
+                            <a href={fullUrl} target={isDataUrl ? undefined : "_blank"} download={isDataUrl ? displayName : undefined} rel="noopener noreferrer">
+                              <Button variant="outline" size="sm" className="gap-2">
+                                <Eye className="w-4 h-4" /> View / Download
+                              </Button>
+                            </a>
+                          );
+                        })()}
                       </div>
                     ))
                   ) : (

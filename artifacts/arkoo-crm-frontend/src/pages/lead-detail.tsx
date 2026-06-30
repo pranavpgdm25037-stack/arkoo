@@ -326,26 +326,6 @@ export default function LeadDetail() {
                     };
                     const docEntries = Object.entries(allDocs).filter(([, url]) => url && String(url).length > 0);
 
-                    const handleFileClick = (e: React.MouseEvent, url: string, filename: string) => {
-                      if (url.startsWith('data:')) {
-                        e.preventDefault();
-                        fetch(url)
-                          .then(res => res.blob())
-                          .then(blob => {
-                            const objectUrl = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = objectUrl;
-                            a.download = filename || 'document';
-                            document.body.appendChild(a);
-                            a.click();
-                            setTimeout(() => {
-                              window.URL.revokeObjectURL(objectUrl);
-                              document.body.removeChild(a);
-                            }, 100);
-                          });
-                      }
-                    };
-
                     if (docEntries.length === 0) {
                       return <div className="text-sm text-muted-foreground italic">No documents uploaded.</div>;
                     }
@@ -379,6 +359,9 @@ export default function LeadDetail() {
                             isPdf = /\.pdf$/i.test(url);
                           }
 
+                          const isDataUrl = url.startsWith('data:');
+                          const downloadName = displayName + (isPdf ? '.pdf' : isImage ? '.png' : '');
+
                           return (
                             <div key={key} className="flex flex-col justify-between p-3 border rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
                               <div className="flex items-center mb-2 gap-2">
@@ -391,7 +374,7 @@ export default function LeadDetail() {
                               {isImage ? (
                                 <div className="relative group w-full h-32 rounded-lg overflow-hidden border bg-white mt-1 mb-3">
                                   <img src={fullUrl} alt={key} className="w-full h-full object-cover" />
-                                  <a href={fullUrl} target="_blank" rel="noreferrer" onClick={(e) => handleFileClick(e, fullUrl, displayName)} className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white text-xs font-medium gap-1 cursor-pointer backdrop-blur-[2px]">
+                                  <a href={fullUrl} target={isDataUrl ? undefined : "_blank"} download={isDataUrl ? downloadName : undefined} rel="noreferrer" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white text-xs font-medium gap-1 cursor-pointer backdrop-blur-[2px]">
                                     <Download className="w-5 h-5" />
                                     View / Download
                                   </a>
@@ -406,7 +389,7 @@ export default function LeadDetail() {
                                 </div>
                               )}
 
-                              <a href={fullUrl} target="_blank" rel="noreferrer" onClick={(e) => handleFileClick(e, fullUrl, displayName)} className="flex items-center justify-center w-full py-1.5 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors">
+                              <a href={fullUrl} target={isDataUrl ? undefined : "_blank"} download={isDataUrl ? downloadName : undefined} rel="noreferrer" className="flex items-center justify-center w-full py-1.5 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors">
                                 <Download className="w-3 h-3 mr-1" /> Open / Download
                               </a>
                             </div>
