@@ -51,9 +51,11 @@ function normalizeLeadSource(raw: string): string {
   return raw.trim() || "Website";
 }
 
+const getSmtpUser = () => process.env.SMTP_USER || process.env.GMAIL_USER || 'arkooprebuildai@gmail.com';
+
 // Configure Nodemailer
 const createTransporter = () => {
-  const user = process.env.SMTP_USER || process.env.GMAIL_USER || 'arkooprebuildai@gmail.com';
+  const user = getSmtpUser();
   const pass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || 'suzvwpodhtuencza').replace(/\s/g, "");
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
@@ -225,7 +227,7 @@ Arkoo Pre-Build Pvt. Ltd.`;
   try {
     const transporter = createTransporter();
     const info = await transporter.sendMail({
-      from: `"ARKOO Prebuild Team" <${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>`,
+      from: `"ARKOO Prebuild Team" <${getSmtpUser()}>`,
       to: emailAddress,
       subject: `Next Steps: Your Arkoo Prebuild Technical Layout Request`,
       text: textContent,
@@ -501,9 +503,9 @@ const handleArkooLead = async (req: any, res: any) => {
     try {
       const transporter = createTransporter();
       const info = await transporter.sendMail({
-        from: `"ARKOO Pre-Build AI" <${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>`,
+        from: `"ARKOO Pre-Build AI" <${getSmtpUser()}>`,
         to: process.env.SALES_REP_EMAIL || 'newleadnotification001@gmail.com',
-        replyTo: process.env.GMAIL_USER || 'arkooprebuildai@gmail.com',
+        replyTo: getSmtpUser(),
         subject: `New Project Inquiry: ${customerName} (${projectType})`,
         html: htmlContent,
         headers: {
@@ -730,7 +732,7 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
       try {
         const transporter = createTransporter();
         await transporter.sendMail({
-          from: `"ARKOO Prebuild Team" <${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>`,
+          from: `"ARKOO Prebuild Team" <${getSmtpUser()}>`,
           to: emailAddress,
           subject: `Received your specifications - Arkoo Prebuild`,
           html: thankYouHtml,
@@ -793,9 +795,9 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
       try {
         const transporter = createTransporter();
         await transporter.sendMail({
-          from: `"ARKOO Pre-Build AI" <${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>`,
+          from: `"ARKOO Pre-Build AI" <${getSmtpUser()}>`,
           to: process.env.SALES_REP_EMAIL || 'newleadnotification001@gmail.com',
-          replyTo: process.env.GMAIL_USER || 'arkooprebuildai@gmail.com',
+          replyTo: getSmtpUser(),
           subject: `[FORM FILLED] Project PIF Submitted: ${customerName} (${projectType})`,
           html: salesNotificationHtml,
           headers: {
@@ -1044,7 +1046,7 @@ const handlePifSubmit = async (req: any, res: any) => {
           try {
             const transporter = createTransporter();
             await transporter.sendMail({
-              from: `"ARKOO Prebuild Team" <${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>`,
+              from: `"ARKOO Prebuild Team" <${getSmtpUser()}>`,
               to: emailAddress,
               subject: `Received your specifications - Arkoo Prebuild`,
               html: thankYouHtml,
@@ -1207,9 +1209,9 @@ const handlePifSubmit = async (req: any, res: any) => {
               try {
                 const transporter = createTransporter();
                 await transporter.sendMail({
-                  from: `"ARKOO Pre-Build AI" <${process.env.GMAIL_USER || 'arkooprebuildai@gmail.com'}>`,
+                  from: `"ARKOO Pre-Build AI" <${getSmtpUser()}>`,
                   to: process.env.SALES_REP_EMAIL || 'newleadnotification001@gmail.com',
-                  replyTo: process.env.GMAIL_USER || 'arkooprebuildai@gmail.com',
+                  replyTo: getSmtpUser(),
                   subject: `[FORM FILLED] Project PIF Submitted: ${customerName} (${projectType})`,
                   html: salesNotificationHtml,
                   attachments: emailAttachments,

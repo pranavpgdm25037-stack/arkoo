@@ -187,9 +187,10 @@ router.post("/email/send", async (req, res) => {
 
     const textBody = `Your Arkoo Prebuild email verification OTP is: ${otp}\n\nThis code expires in 10 minutes. Do not share it with anyone.`;
 
+    const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || 'arkooprebuildai@gmail.com';
     const transporter = createSMTPTransporter();
     await transporter.sendMail({
-      from: `"Arkoo Prebuild" <${process.env.GMAIL_USER || "arkooprebuildai@gmail.com"}>`,
+      from: `"Arkoo Prebuild" <${smtpUser}>`,
       to: email,
       subject: `${otp} — Your Arkoo Prebuild Verification Code`,
       text: textBody,
