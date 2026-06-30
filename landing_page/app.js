@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     : 'https://arkoo-u8sx.onrender.com';
 
   // ============================================================
-  // FIREBASE CLIENT INITIALIZATION (FOR PHONE OTP)
+  // FIREBASE CLIENT INITIALIZATION (FOR OTP & EMAIL VERIFICATION)
   // ============================================================
   let auth = null;
   let recaptchaVerifier = null;
@@ -56,6 +56,50 @@ document.addEventListener('DOMContentLoaded', () => {
       auth = firebase.auth();
       auth.useDeviceLanguage();
 
+      // Check if redirect link contains sign-in action code for email link auth
+      if (auth.isSignInWithEmailLink(window.location.href)) {
+        let email = window.localStorage.getItem('emailForSignIn');
+        if (!email) {
+          email = window.prompt('Please enter your email to complete verification:');
+        }
+        if (email) {
+          // Disable email field and show loading
+          if (emailField) {
+            emailField.value = email;
+            emailField.disabled = true;
+            emailField.style.borderColor = '#f59e0b'; // orange for verifying
+          }
+          setOtpStatus(emailOtpStatus, '⚡ Completing email verification...', 'info');
+
+          auth.signInWithEmailLink(email, window.location.href)
+            .then((result) => {
+              emailOtpVerified = true;
+              window.localStorage.removeItem('emailForSignIn');
+              
+              if (emailField) {
+                emailField.disabled = true;
+                emailField.style.borderColor = '#10b981'; // green
+              }
+              setOtpStatus(emailOtpStatus, '✅ Email verified successfully via Firebase!', 'success');
+              if (sendEmailOtpBtn) sendEmailOtpBtn.style.display = 'none';
+              if (errorContactEmail) {
+                errorContactEmail.textContent = '✅ Email Verified';
+                errorContactEmail.style.color = '#10b981';
+                errorContactEmail.style.display = 'block';
+              }
+              validateField(emailField);
+            })
+            .catch((error) => {
+              console.error("Error signing in with email link:", error);
+              setOtpStatus(emailOtpStatus, '❌ Verification link expired or invalid. Please request a new one.', 'error');
+              if (emailField) {
+                emailField.disabled = false;
+                emailField.style.borderColor = '';
+              }
+            });
+        }
+      }
+
       // Create invisible ReCaptcha on the Send Phone OTP button
       recaptchaVerifier = new firebase.auth.RecaptchaVerifier('send-phone-otp-btn', {
         'size': 'invisible',
@@ -63,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // ReCaptcha completed successfully
         }
       });
-      console.log("Firebase Phone Auth client initialized successfully.");
+      console.log("Firebase Auth client initialized successfully.");
     } catch (e) {
       console.error("Firebase init failed: ", e);
     }
@@ -201,9 +245,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================
-  // EMAIL OTP
+  // EMAIL VERIFICATION (VIA FIREBASE EMAIL LINK AUTH)
   // ============================================================
-  async function sendEmailOtp() {
+  async function sendEmailVerificationLink() {
     const email = emailField ? emailField.value.trim() : '';
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       if (errorContactEmail) {
@@ -215,129 +259,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (sendEmailOtpBtn) {
-      sendEmailOtpBtn.textContent = 'Sending...';
+      sendEmailOtpBtn.textContent = 'Sending Link...';
       sendEmailOtpBtn.disabled = true;
     }
     if (errorContactEmail) errorContactEmail.style.display = 'none';
 
     try {
-      const res = await fetch(API_BASE + '/api/otp/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        if (emailOtpRow) emailOtpRow.style.display = 'block';
-        if (sendEmailOtpBtn) sendEmailOtpBtn.style.display = 'none';
-        setOtpStatus(emailOtpStatus, `✉ OTP sent to ${email}. Check your inbox.`, 'info');
-        emailResendTimer = startResendCountdown(emailResendTimerEl, resendEmailOtpBtn, 60);
-      } else {
-        if (sendEmailOtpBtn) {
-          sendEmailOtpBtn.textContent = 'Send Email OTP';
-          sendEmailOtpBtn.disabled = false;
-        }
-        setOtpStatus(emailOtpStatus, data.error || 'Failed to send OTP. Try again.', 'error');
-        if (emailOtpRow) emailOtpRow.style.display = 'block';
+      if (!auth) {
+        throw new Error("Authentication module is initializing. Please wait a moment and try again.");
       }
-    } catch (err) {
+
+      const actionCodeSettings = {
+        // Redirect back to this page, stripping any existing query parameters to keep it clean
+        url: window.location.href.split('?')[0].split('#')[0],
+        handleCodeInApp: true
+      };
+
+      await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+
+      // Save email locally so we can automatically complete sign-in on redirect
+      window.localStorage.setItem('emailForSignIn', email);
+
+      setOtpStatus(emailOtpStatus, '✉️ Verification link sent! Check your inbox (and spam folder) and click the link to verify.', 'info');
       if (sendEmailOtpBtn) {
-        sendEmailOtpBtn.textContent = 'Send Email OTP';
+        sendEmailOtpBtn.textContent = 'Resend Verification Link';
         sendEmailOtpBtn.disabled = false;
       }
-      setOtpStatus(emailOtpStatus, 'Network error. Please try again.', 'error');
-      if (emailOtpRow) emailOtpRow.style.display = 'block';
-    }
-  }
-
-  async function verifyEmailOtp() {
-    const email = emailField ? emailField.value.trim() : '';
-    const otp = emailOtpInput ? emailOtpInput.value.trim() : '';
-
-    if (!otp || otp.length !== 6) {
-      setOtpStatus(emailOtpStatus, 'Please enter the 6-digit OTP.', 'error');
-      return;
-    }
-
-    if (verifyEmailOtpBtn) {
-      verifyEmailOtpBtn.textContent = 'Verifying...';
-      verifyEmailOtpBtn.disabled = true;
-    }
-
-    try {
-      const res = await fetch(API_BASE + '/api/otp/email/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp })
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        emailOtpVerified = true;
-        setOtpStatus(emailOtpStatus, '✅ Email verified successfully!', 'success');
-        if (verifyEmailOtpBtn) verifyEmailOtpBtn.style.display = 'none';
-        if (emailOtpInput) {
-          emailOtpInput.disabled = true;
-          emailOtpInput.style.borderColor = '#10b981';
-        }
-        if (resendEmailOtpBtn) resendEmailOtpBtn.style.display = 'none';
-        if (emailResendTimerEl) emailResendTimerEl.textContent = '';
-        if (emailResendTimer) clearInterval(emailResendTimer);
-        if (errorContactEmail) {
-          errorContactEmail.textContent = '✅ Email Verified';
-          errorContactEmail.style.color = '#10b981';
-          errorContactEmail.style.display = 'block';
-        }
-      } else {
-        emailOtpVerified = false;
-        setOtpStatus(emailOtpStatus, data.error || 'Incorrect OTP. Try again.', 'error');
-        if (verifyEmailOtpBtn) {
-          verifyEmailOtpBtn.textContent = 'Verify OTP';
-          verifyEmailOtpBtn.disabled = false;
-        }
-      }
     } catch (err) {
-      setOtpStatus(emailOtpStatus, 'Network error. Please try again.', 'error');
-      if (verifyEmailOtpBtn) {
-        verifyEmailOtpBtn.textContent = 'Verify OTP';
-        verifyEmailOtpBtn.disabled = false;
+      console.error("Firebase sendSignInLinkToEmail failed:", err);
+      if (sendEmailOtpBtn) {
+        sendEmailOtpBtn.textContent = 'Send Verification Link';
+        sendEmailOtpBtn.disabled = false;
       }
+      setOtpStatus(emailOtpStatus, err.message || 'Failed to send verification link. Try again.', 'error');
     }
   }
 
-  if (sendEmailOtpBtn) sendEmailOtpBtn.addEventListener('click', sendEmailOtp);
-  if (verifyEmailOtpBtn) verifyEmailOtpBtn.addEventListener('click', verifyEmailOtp);
-  if (resendEmailOtpBtn) {
-    resendEmailOtpBtn.addEventListener('click', () => {
-      if (emailResendTimer) clearInterval(emailResendTimer);
-      sendEmailOtp();
-    });
-  }
+  if (sendEmailOtpBtn) sendEmailOtpBtn.addEventListener('click', sendEmailVerificationLink);
 
   // Reset OTP state when email is changed
   if (emailField) {
     emailField.addEventListener('input', () => {
       emailOtpVerified = false;
-      if (emailOtpRow) emailOtpRow.style.display = 'none';
       if (sendEmailOtpBtn) {
         sendEmailOtpBtn.style.display = 'inline-block';
-        sendEmailOtpBtn.textContent = 'Send Email OTP';
+        sendEmailOtpBtn.textContent = 'Send Verification Link';
         sendEmailOtpBtn.disabled = false;
-      }
-      if (emailOtpInput) {
-        emailOtpInput.value = '';
-        emailOtpInput.disabled = false;
-        emailOtpInput.style.borderColor = '';
-      }
-      if (verifyEmailOtpBtn) {
-        verifyEmailOtpBtn.style.display = 'inline-block';
-        verifyEmailOtpBtn.textContent = 'Verify OTP';
-        verifyEmailOtpBtn.disabled = false;
       }
       if (emailOtpStatus) emailOtpStatus.textContent = '';
       if (errorContactEmail) errorContactEmail.style.display = 'none';
-      if (emailResendTimer) clearInterval(emailResendTimer);
       validateField(emailField);
     });
   }
