@@ -1023,6 +1023,10 @@ const handlePifSubmit = async (req: any, res: any) => {
         const architectDetailsProvided = !!(architectName || architectContact);
         const drawingsUploadedCount = Object.keys(uploadedFiles).length;
 
+        // Strip massive base64 document strings from AI payload to prevent API errors
+        const dataForAi = { ...data };
+        delete dataForAi.uploadedDocuments;
+
         // Call AI Qualification (This takes time, which is why it's in the background)
         const qualification = await qualifyLead({
           source: "Arkoo LMS Form",
@@ -1038,7 +1042,7 @@ const handlePifSubmit = async (req: any, res: any) => {
           architectHired: hiredarchitect,
           architectDetailsProvided: architectDetailsProvided,
           drawingsUploadedCount: drawingsUploadedCount,
-          rawDetails: JSON.stringify(data)
+          rawDetails: JSON.stringify(dataForAi)
         });
 
         // Send Thank You Email to Customer
