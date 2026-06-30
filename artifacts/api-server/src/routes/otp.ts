@@ -53,8 +53,8 @@ function createSMTPTransporter() {
   const user = process.env.SMTP_USER || process.env.GMAIL_USER || 'arkooprebuildai@gmail.com';
   const pass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || 'suzvwpodhtuencza').replace(/\s/g, "");
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT || '465', 10);
-  const secure = process.env.SMTP_SECURE === 'false' ? false : true;
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const secure = process.env.SMTP_SECURE === 'true'; // Default to false (STARTTLS on port 587)
 
   return nodemailer.createTransport({
     host: host,
