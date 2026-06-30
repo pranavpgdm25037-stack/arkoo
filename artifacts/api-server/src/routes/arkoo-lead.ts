@@ -60,7 +60,7 @@ const getSmtpUser = () => process.env.SMTP_USER || process.env.GMAIL_USER || 'ar
 /**
  * Send email via Resend HTTP API (works on Render — uses port 443).
  */
-async function sendEmailViaResend(options: { from: string; to: string; subject: string; html: string; text?: string; replyTo?: string }): Promise<{ messageId: string }> {
+async function sendEmailViaResend(options: { from: string; to: string; subject: string; html: string; text?: string; replyTo?: string; attachments?: any[]; headers?: Record<string, string> }): Promise<{ messageId: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error('RESEND_API_KEY is not set');
 
@@ -72,6 +72,24 @@ async function sendEmailViaResend(options: { from: string; to: string; subject: 
   };
   if (options.text) payload.text = options.text;
   if (options.replyTo) payload.reply_to = options.replyTo;
+  if (options.attachments) {
+    payload.attachments = options.attachments.map(att => {
+      // Safely convert Buffer, Stream, or String to base64
+      let base64Content = '';
+      if (Buffer.isBuffer(att.content)) {
+        base64Content = att.content.toString('base64');
+      } else {
+        base64Content = Buffer.from(att.content).toString('base64');
+      }
+      return {
+        filename: att.filename,
+        content: base64Content,
+      };
+    });
+  }
+  if (options.headers) {
+    payload.headers = options.headers;
+  }
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
