@@ -53,29 +53,76 @@ function normalizeLeadSource(raw: string): string {
 
 const getSmtpUser = () => process.env.SMTP_USER || process.env.GMAIL_USER || 'arkooprebuildai@gmail.com';
 
-// Configure Nodemailer
-const createTransporter = () => {
+// ============================================================
+// EMAIL SENDING — Dual-path: Resend HTTP API (Render) + SMTP fallback (local)
+// ============================================================
+
+/**
+ * Send email via Resend HTTP API (works on Render — uses port 443).
+ */
+async function sendEmailViaResend(options: { from: string; to: string; subject: string; html: string; text?: string; replyTo?: string }): Promise<{ messageId: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error('RESEND_API_KEY is not set');
+
+  const payload: any = {
+    from: options.from,
+    to: [options.to],
+    subject: options.subject,
+    html: options.html,
+  };
+  if (options.text) payload.text = options.text;
+  if (options.replyTo) payload.reply_to = options.replyTo;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Resend API error (${response.status}): ${errorBody}`);
+  }
+  const result = await response.json() as any;
+  return { messageId: result.id || 'resend-ok' };
+}
+
+/**
+ * Unified email sender: tries Resend first (HTTP API), falls back to SMTP.
+ */
+async function sendLeadEmail(options: { from: string; to: string; subject: string; html: string; text?: string; replyTo?: string; headers?: Record<string, string>; attachments?: any[] }): Promise<{ messageId: string }> {
+  // Primary: Resend HTTP API (works on Render)
+  if (process.env.RESEND_API_KEY) {
+    // Replace sender with verified Resend domain
+    const resendFrom = `"Arkoo Prebuild" <info@mansam.cloud>`;
+    console.log(`[LEAD EMAIL] Sending via Resend to ${options.to}...`);
+    const result = await sendEmailViaResend({ ...options, from: resendFrom });
+    console.log(`[LEAD EMAIL] ✅ Sent via Resend: ${result.messageId}`);
+    return result;
+  }
+
+  // Fallback: SMTP (works locally)
+  console.log(`[LEAD EMAIL] Sending via SMTP to ${options.to}...`);
   const user = getSmtpUser();
   const pass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || 'suzvwpodhtuencza').replace(/\s/g, "");
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const secure = process.env.SMTP_SECURE === 'true'; // Default to false (STARTTLS on port 587)
+  const secure = process.env.SMTP_SECURE === 'true';
 
-  return nodemailer.createTransport({
-    host: host,
-    port: port,
-    secure: secure,
-    auth: {
-      user: user,
-      pass: pass,
-    },
-    // Adding extra reliability flags
+  const transporter = nodemailer.createTransport({
+    host, port, secure,
+    auth: { user, pass },
     socketTimeout: 30000,
     connectionTimeout: 30000,
-    debug: true, // Show detailed logs in the terminal
-    logger: true
   });
-};
+
+  const info = await transporter.sendMail(options);
+  console.log(`[LEAD EMAIL] ✅ Sent via SMTP: ${info.messageId}`);
+  return { messageId: info.messageId };
+}
 
 // Helper function to extract structured project details from free-text requirements
 function parseRequirements(requirements: string) {
@@ -225,45 +272,18 @@ Arkoo Pre-Build Pvt. Ltd.`;
   `;
 
   try {
-    const transporter = createTransporter();
-    const info = await transporter.sendMail({
+    const info = await sendLeadEmail({
       from: `"ARKOO Prebuild Team" <${getSmtpUser()}>`,
       to: emailAddress,
       subject: `Next Steps: Your Arkoo Prebuild Technical Layout Request`,
       text: textContent,
       html: customerHtmlContent,
     });
-    console.log(`[CUSTOMER EMAIL] Form link sent successfully via Gmail to ${emailAddress}: ${info.messageId}`);
+    console.log(`[CUSTOMER EMAIL] Form link sent successfully to ${emailAddress}: ${info.messageId}`);
     return null; 
   } catch (error: any) {
-    console.error(`⚠️ Gmail failed for customer email to ${emailAddress}, attempting Ethereal fallback:`, error.message);
-    try {
-      const testAccount = await nodemailer.createTestAccount();
-      const fallbackTransporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-
-      const info = await fallbackTransporter.sendMail({
-        from: '"ARKOO Fallback" <no-reply@arkoo.in>',
-        to: emailAddress,
-        subject: `Next Steps: Your Arkoo Prebuild Technical Layout Request`,
-        text: textContent + `\n\n---\nNote: This is a verification email sent to the customer via Ethereal fallback.`,
-        html: customerHtmlContent + `<p><br>---<br><em>Note: This is a verification email sent to the customer via Ethereal fallback.</em></p>`,
-      });
-
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      console.log(`[CUSTOMER EMAIL] Verification Email Sent to ${emailAddress}! View here:`, previewUrl);
-      return previewUrl || null;
-    } catch (fallbackError: any) {
-      console.error(`⚠️ Fallback Ethereal failed for customer email to ${emailAddress}:`, fallbackError.message);
-      return null;
-    }
+    console.error(`⚠️ Failed to send customer email to ${emailAddress}:`, error.message);
+    return null;
   }
 }
 
@@ -501,8 +521,7 @@ const handleArkooLead = async (req: any, res: any) => {
     let customerPreviewUrl: string | null = null;
 
     try {
-      const transporter = createTransporter();
-      const info = await transporter.sendMail({
+      const info = await sendLeadEmail({
         from: `"ARKOO Pre-Build AI" <${getSmtpUser()}>`,
         to: process.env.SALES_REP_EMAIL || 'newleadnotification001@gmail.com',
         replyTo: getSmtpUser(),
@@ -540,34 +559,11 @@ const handleArkooLead = async (req: any, res: any) => {
       }
 
     } catch (error: any) {
-      console.error("Gmail Error:", error.message);
+      console.error("Email sending error:", error.message);
       
-      // FALLBACK: Use Ethereal for verification if Gmail fails
-      try {
-        console.log("Attempting fallback to Ethereal Email for verification...");
-        const testAccount = await nodemailer.createTestAccount();
-        const fallbackTransporter = nodemailer.createTransport({
-          host: "smtp.ethereal.email",
-          port: 587,
-          secure: false,
-          auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
-          },
-        });
-
-        const info = await fallbackTransporter.sendMail({
-          from: '"ARKOO Fallback" <no-reply@arkoo.in>',
-          to: process.env.SALES_REP_EMAIL || 'newleadnotification001@gmail.com',
-          subject: `[VERIFICATION] ${projectType} - ${customerName}`,
-          html: htmlContent + `<p><br>---<br><em>Note: This is a verification email sent via Ethereal because the primary Gmail was blocked.</em></p>`,
-        });
-
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        console.log("Verification Email Sent! View here:", previewUrl);
-
-        // Fallback: send customer email for ALL leads that have an email address
-        if (emailAddress) {
+      // Still attempt to send customer email even if sales notification failed
+      if (emailAddress) {
+        try {
           customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, phoneNumber, leadId ? leadId.toString() : ledgerEntry.id, detectBaseUrl(req), {
             projectlocation: projectLocation,
             projecttype: projectType,
@@ -730,8 +726,7 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
       `;
 
       try {
-        const transporter = createTransporter();
-        await transporter.sendMail({
+        await sendLeadEmail({
           from: `"ARKOO Prebuild Team" <${getSmtpUser()}>`,
           to: emailAddress,
           subject: `Received your specifications - Arkoo Prebuild`,
@@ -740,7 +735,7 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
         console.log(`[GOOGLE FORM SUCCESS] Thank you email sent to customer at ${emailAddress}`);
         customerEmailSent = true;
       } catch (err: any) {
-        console.error(`⚠️ Failed to send thank you email to ${emailAddress}:`, err.message, err);
+        console.error(`⚠️ Failed to send thank you email to ${emailAddress}:`, err.message);
       }
     }
 
@@ -793,8 +788,7 @@ const handleGoogleFormSubmit = async (req: any, res: any) => {
     `;
 
       try {
-        const transporter = createTransporter();
-        await transporter.sendMail({
+        await sendLeadEmail({
           from: `"ARKOO Pre-Build AI" <${getSmtpUser()}>`,
           to: process.env.SALES_REP_EMAIL || 'newleadnotification001@gmail.com',
           replyTo: getSmtpUser(),
@@ -1044,8 +1038,7 @@ const handlePifSubmit = async (req: any, res: any) => {
           </div>
           `;
           try {
-            const transporter = createTransporter();
-            await transporter.sendMail({
+            await sendLeadEmail({
               from: `"ARKOO Prebuild Team" <${getSmtpUser()}>`,
               to: emailAddress,
               subject: `Received your specifications - Arkoo Prebuild`,
@@ -1207,8 +1200,7 @@ const handlePifSubmit = async (req: any, res: any) => {
               `;
 
               try {
-                const transporter = createTransporter();
-                await transporter.sendMail({
+                await sendLeadEmail({
                   from: `"ARKOO Pre-Build AI" <${getSmtpUser()}>`,
                   to: process.env.SALES_REP_EMAIL || 'newleadnotification001@gmail.com',
                   replyTo: getSmtpUser(),
