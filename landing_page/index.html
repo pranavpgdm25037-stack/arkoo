@@ -176,9 +176,11 @@
                   id="contact-phone" 
                   name="phone" 
                   class="form-control" 
-                  placeholder="Enter digits (e.g. +1234567890)" 
+                  value="+91"
+                  placeholder="+91 98765 43210" 
                   required 
-                  pattern="^\+?[0-9]{10,15}$"
+                  pattern="^\+91[0-9]{10}$"
+                  maxlength="13"
                 >
               </div>
               <!-- Phone OTP Row -->

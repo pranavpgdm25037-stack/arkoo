@@ -505,6 +505,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Reset phone OTP state when phone number is changed
   if (phoneField) {
     phoneField.addEventListener('input', () => {
+      // Ensure the phone number starts with +91 and keep it locked
+      if (!phoneField.value.startsWith('+91')) {
+        phoneField.value = '+91' + phoneField.value.replace(/^\+?9?1?/, '').replace(/\D/g, '');
+      }
+      
       phoneOtpVerified = false;
       if (phoneOtpRow) phoneOtpRow.style.display = 'none';
       if (sendPhoneOtpBtn) {
