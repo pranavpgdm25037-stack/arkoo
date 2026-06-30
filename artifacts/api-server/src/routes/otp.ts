@@ -50,12 +50,16 @@ function generateOtp(): string {
 // SMTP TRANSPORTER — Gmail App Password
 // ============================================================
 function createSMTPTransporter() {
-  const user = process.env.GMAIL_USER || "arkooprebuildai@gmail.com";
-  const pass = (process.env.GMAIL_APP_PASSWORD || "suzvwpodhtuencza").replace(/\s/g, "");
+  const user = process.env.SMTP_USER || process.env.GMAIL_USER || 'arkooprebuildai@gmail.com';
+  const pass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || 'suzvwpodhtuencza').replace(/\s/g, "");
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.SMTP_PORT || '465', 10);
+  const secure = process.env.SMTP_SECURE === 'false' ? false : true;
+
   return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
+    host: host,
+    port: port,
+    secure: secure,
     auth: { user, pass },
     socketTimeout: 30000,
     connectionTimeout: 30000,
