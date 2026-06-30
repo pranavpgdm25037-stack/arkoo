@@ -962,8 +962,9 @@ const handlePifSubmit = async (req: any, res: any) => {
         const timeline = getFieldValue(data, ["completiontimeline", "timeline", "duration"], "Not Specified");
         const additionalRequirements = getFieldValue(data, ["additionalrequirements", "requirements", "comments", "notes", "message"], "None");
 
-        // Handle File Uploads via Multer (Convert to Base64 data URLs)
+        // Handle File Uploads via Multer (Convert to Base64 data URLs & prepare email attachments)
         const uploadedFiles: Record<string, string> = {};
+        const emailAttachments: any[] = [];
         if (req.files) {
           for (const [key, filesArray] of Object.entries(req.files) as any) {
              const fileArray = filesArray as Express.Multer.File[];
@@ -972,6 +973,11 @@ const handlePifSubmit = async (req: any, res: any) => {
                 if (file.buffer) {
                   const base64Str = file.buffer.toString("base64");
                   uploadedFiles[key] = `data:${file.mimetype || 'application/pdf'};base64,${base64Str}`;
+                  emailAttachments.push({
+                     filename: file.originalname || `${key}.pdf`,
+                     content: file.buffer,
+                     contentType: file.mimetype
+                   });
                 }
              }
           }
@@ -1203,6 +1209,7 @@ const handlePifSubmit = async (req: any, res: any) => {
                   replyTo: process.env.GMAIL_USER || 'arkooprebuildai@gmail.com',
                   subject: `[FORM FILLED] Project PIF Submitted: ${customerName} (${projectType})`,
                   html: salesNotificationHtml,
+                  attachments: emailAttachments,
                   headers: {
                     'X-Priority': '1',
                     'X-MSMail-Priority': 'High',
