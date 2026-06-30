@@ -221,9 +221,20 @@
               >
               <span id="email-status-icon" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: none;"></span>
             </div>
-            <!-- Send Email Verification Link Button -->
-            <button type="button" id="send-email-otp-btn" style="margin-top: 8px; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg,#6366f1,#8b5cf6); border: none; color: #fff; cursor: pointer; transition: all 0.2s;">Send Verification Link</button>
-            <div id="email-otp-status" style="font-size:0.8rem; margin-top:5px;"></div>
+            <!-- Send Email OTP Button -->
+            <button type="button" id="send-email-otp-btn" style="margin-top: 8px; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg,#6366f1,#8b5cf6); border: none; color: #fff; cursor: pointer; transition: all 0.2s;">Send Email OTP</button>
+            <!-- Email OTP Row (hidden until OTP is sent) -->
+            <div id="email-otp-row" style="display:none; margin-top:8px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="text" id="email-otp-input" maxlength="6" placeholder="Enter 6-digit OTP" style="flex:1; padding:8px 12px; border-radius:8px; background:#1e293b; border:1px solid #334155; color:#e2e8f0; font-size:0.9rem; letter-spacing:4px; font-family:monospace;">
+                <button type="button" id="verify-email-otp-btn" style="padding:8px 14px; font-size:0.8rem; font-weight:600; border-radius:8px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; color:#fff; cursor:pointer; white-space:nowrap;">Verify OTP</button>
+              </div>
+              <div id="email-otp-status" style="font-size:0.8rem; margin-top:5px;"></div>
+              <div style="margin-top:6px;">
+                <button type="button" id="resend-email-otp-btn" style="font-size:0.78rem; background:none; border:none; color:#6366f1; cursor:pointer; text-decoration:underline;">Resend OTP</button>
+                <span id="email-resend-timer" style="font-size:0.78rem; color:#64748b; margin-left:6px;"></span>
+              </div>
+            </div>
             <div class="error-message" id="error-contact-email">
               Please enter a valid corporate email address.
             </div>
