@@ -284,11 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resendEmailOtpBtn) resendEmailOtpBtn.style.display = 'none';
         if (emailResendTimerEl) emailResendTimerEl.textContent = '';
         if (emailResendTimer) clearInterval(emailResendTimer);
-        if (errorContactEmail) {
-          errorContactEmail.textContent = '✅ Email Verified';
-          errorContactEmail.style.color = '#10b981';
-          errorContactEmail.style.display = 'block';
-        }
+        if (errorContactEmail) errorContactEmail.style.display = 'none';
       } else {
         emailOtpVerified = false;
         setOtpStatus(emailOtpStatus, data.error || 'Incorrect OTP. Try again.', 'error');
@@ -504,11 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resendPhoneOtpBtn) resendPhoneOtpBtn.style.display = 'none';
     if (phoneResendTimerEl) phoneResendTimerEl.textContent = '';
     if (phoneResendTimer) clearInterval(phoneResendTimer);
-    if (errorContactPhone) {
-      errorContactPhone.textContent = '✅ Phone Verified';
-      errorContactPhone.style.color = '#10b981';
-      errorContactPhone.style.display = 'block';
-    }
+    if (errorContactPhone) errorContactPhone.style.display = 'none';
   }
 
   if (sendPhoneOtpBtn) sendPhoneOtpBtn.addEventListener('click', sendPhoneOtp);
