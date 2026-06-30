@@ -47,14 +47,48 @@ function generateOtp(): string {
 }
 
 // ============================================================
-// SMTP TRANSPORTER — Gmail App Password
+// EMAIL SENDING — Dual-path: Resend HTTP API (Render) + SMTP fallback (local)
 // ============================================================
+
+/**
+ * Send email via Resend HTTP API (works on Render — uses port 443).
+ * Requires RESEND_API_KEY env variable.
+ * Free tier: 100 emails/day, sender must be onboarding@resend.dev or verified domain.
+ */
+async function sendEmailViaResend(options: { from: string; to: string; subject: string; text: string; html: string }): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error('RESEND_API_KEY is not set');
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: options.from,
+      to: [options.to],
+      subject: options.subject,
+      text: options.text,
+      html: options.html,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Resend API error (${response.status}): ${errorBody}`);
+  }
+}
+
+/**
+ * Send email via SMTP (Nodemailer) — works locally, blocked on Render free tier.
+ */
 function createSMTPTransporter() {
   const user = process.env.SMTP_USER || process.env.GMAIL_USER || 'arkooprebuildai@gmail.com';
   const pass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || 'suzvwpodhtuencza').replace(/\s/g, "");
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const secure = process.env.SMTP_SECURE === 'true'; // Default to false (STARTTLS on port 587)
+  const secure = process.env.SMTP_SECURE === 'true';
 
   return nodemailer.createTransport({
     host: host,
@@ -64,6 +98,25 @@ function createSMTPTransporter() {
     socketTimeout: 30000,
     connectionTimeout: 30000,
   });
+}
+
+/**
+ * Unified email sender: tries Resend first (HTTP API), falls back to SMTP.
+ */
+async function sendEmail(options: { from: string; to: string; subject: string; text: string; html: string }): Promise<void> {
+  // Try Resend first (works on Render)
+  if (process.env.RESEND_API_KEY) {
+    console.log('[EMAIL] Sending via Resend HTTP API...');
+    await sendEmailViaResend(options);
+    console.log('[EMAIL] ✅ Sent via Resend');
+    return;
+  }
+
+  // Fallback to SMTP (works locally)
+  console.log('[EMAIL] Sending via SMTP (Nodemailer)...');
+  const transporter = createSMTPTransporter();
+  await transporter.sendMail(options);
+  console.log('[EMAIL] ✅ Sent via SMTP');
 }
 
 // ============================================================
@@ -188,9 +241,13 @@ router.post("/email/send", async (req, res) => {
     const textBody = `Your Arkoo Prebuild email verification OTP is: ${otp}\n\nThis code expires in 10 minutes. Do not share it with anyone.`;
 
     const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || 'arkooprebuildai@gmail.com';
-    const transporter = createSMTPTransporter();
-    await transporter.sendMail({
-      from: `"Arkoo Prebuild" <${smtpUser}>`,
+    // Use Resend's default sender on free tier, or SMTP user for local SMTP
+    const fromAddress = process.env.RESEND_API_KEY
+      ? `"Arkoo Prebuild" <onboarding@resend.dev>`
+      : `"Arkoo Prebuild" <${smtpUser}>`;
+
+    await sendEmail({
+      from: fromAddress,
       to: email,
       subject: `${otp} — Your Arkoo Prebuild Verification Code`,
       text: textBody,
