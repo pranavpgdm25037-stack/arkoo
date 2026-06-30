@@ -594,10 +594,9 @@ const handleArkooLead = async (req: any, res: any) => {
             await db.update(leadsTable).set({ status: "Form Pending" }).where(eq(leadsTable.id, leadId));
             console.log(`[STATUS UPDATE] Automatically updated lead ID ${leadId} to 'Form Pending' after sending customer Ethereal email.`);
           }
+        } catch (fallbackError: any) {
+          console.error("All email attempts failed:", fallbackError.message);
         }
-
-      } catch (fallbackError: any) {
-        console.error("All email attempts failed:", fallbackError.message);
       }
     }
 
