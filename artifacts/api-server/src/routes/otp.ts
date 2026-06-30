@@ -241,9 +241,9 @@ router.post("/email/send", async (req, res) => {
     const textBody = `Your Arkoo Prebuild email verification OTP is: ${otp}\n\nThis code expires in 10 minutes. Do not share it with anyone.`;
 
     const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || 'arkooprebuildai@gmail.com';
-    // Use Resend's default sender on free tier, or SMTP user for local SMTP
+    // Use Resend's verified domain sender, or SMTP user for local SMTP
     const fromAddress = process.env.RESEND_API_KEY
-      ? `"Arkoo Prebuild" <onboarding@resend.dev>`
+      ? `"Arkoo Prebuild" <info@mansam.cloud>`
       : `"Arkoo Prebuild" <${smtpUser}>`;
 
     await sendEmail({
