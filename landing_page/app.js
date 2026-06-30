@@ -30,6 +30,39 @@ document.addEventListener('DOMContentLoaded', () => {
   hideNotification();
   updateProgressMeter();
 
+  // ============================================================
+  // FIREBASE CLIENT INITIALIZATION (FOR PHONE OTP)
+  // ============================================================
+  let auth = null;
+  let recaptchaVerifier = null;
+  let confirmationResult = null;
+
+  async function initFirebase() {
+    try {
+      const res = await fetch('/api/otp/config');
+      const config = await res.json();
+      if (!config.apiKey) {
+        console.warn("Firebase App API Key is missing. Falling back to Mock Phone OTP.");
+        return;
+      }
+      firebase.initializeApp(config);
+      auth = firebase.auth();
+      auth.useDeviceLanguage();
+
+      // Create invisible ReCaptcha on the Send Phone OTP button
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('send-phone-otp-btn', {
+        'size': 'invisible',
+        'callback': (response) => {
+          // ReCaptcha completed successfully
+        }
+      });
+      console.log("Firebase Phone Auth client initialized successfully.");
+    } catch (e) {
+      console.error("Firebase init failed: ", e);
+    }
+  }
+  initFirebase();
+
   // Handle Project Type 'Other' visibility
   const projectTypeSelect = document.getElementById('project-type');
   const customTypeGroup = document.getElementById('group-custom-project-type');
@@ -59,12 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function showNotification(type, message) {
     notificationBanner.className = 'notification-banner ' + type;
     notificationText.textContent = message;
-    
-    // Toggle active state icons
     iconLoading.style.display = type === 'loading' ? 'block' : 'none';
     iconSuccess.style.display = type === 'success' ? 'block' : 'none';
     iconError.style.display = type === 'error' ? 'block' : 'none';
-    
     notificationBanner.style.display = 'block';
   }
 
@@ -79,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     fields.forEach(field => {
       if (!field) return;
-      
       const isRequired = field.hasAttribute('required');
       if (isRequired) {
         requiredCount++;
@@ -92,17 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalToTrack = requiredCount > 0 ? requiredCount : fields.length;
     const completionPercent = Math.round((completedCount / totalToTrack) * 100);
     
-    // Animate progress elements
-    if (progressBar) {
-      progressBar.style.width = `${completionPercent}%`;
-    }
+    if (progressBar) progressBar.style.width = `${completionPercent}%`;
     if (progressMeter) {
       progressMeter.textContent = `${completionPercent}% Completed`;
-      
-      // Make completion meter glowing when 100%
-      if (completionPercent === 105) { // Just in case, keep boundary
-        completionPercent = 100;
-      }
       if (completionPercent === 100) {
         progressMeter.style.borderColor = 'var(--color-green)';
         progressMeter.style.color = 'var(--color-green)';
@@ -115,247 +136,486 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Field validator function
-  // Field validator function
-  let emailValidationState = 'idle'; // 'idle', 'loading', 'valid', 'invalid'
-  const emailField = document.getElementById('contact-email');
-  const emailStatusIcon = document.getElementById('email-status-icon');
-  const errorContactEmail = document.getElementById('error-contact-email');
-  const verifyEmailBtn = document.getElementById('verify-email-btn');
+  // ============================================================
+  // OTP STATE
+  // ============================================================
+  let emailOtpVerified = false;
+  let phoneOtpVerified = false;
+  let emailResendTimer = null;
+  let phoneResendTimer = null;
 
-  if (verifyEmailBtn) {
-    verifyEmailBtn.addEventListener('click', () => {
-      if (emailField.value.trim() !== '') {
-        validateEmailOnServer(emailField.value.trim());
-      } else {
-        emailValidationState = 'invalid';
-        errorContactEmail.textContent = 'Please enter an email address to verify.';
+  // ─── DOM refs ────────────────────────────────────────────────
+  const emailField          = document.getElementById('contact-email');
+  const phoneField          = document.getElementById('contact-phone');
+  const errorContactEmail   = document.getElementById('error-contact-email');
+  const errorContactPhone   = document.getElementById('error-contact-phone');
+
+  // Email OTP elements
+  const sendEmailOtpBtn     = document.getElementById('send-email-otp-btn');
+  const emailOtpRow         = document.getElementById('email-otp-row');
+  const emailOtpInput       = document.getElementById('email-otp-input');
+  const verifyEmailOtpBtn   = document.getElementById('verify-email-otp-btn');
+  const resendEmailOtpBtn   = document.getElementById('resend-email-otp-btn');
+  const emailOtpStatus      = document.getElementById('email-otp-status');
+  const emailResendTimerEl  = document.getElementById('email-resend-timer');
+
+  // Phone OTP elements
+  const sendPhoneOtpBtn     = document.getElementById('send-phone-otp-btn');
+  const phoneOtpRow         = document.getElementById('phone-otp-row');
+  const phoneOtpInput       = document.getElementById('phone-otp-input');
+  const verifyPhoneOtpBtn   = document.getElementById('verify-phone-otp-btn');
+  const resendPhoneOtpBtn   = document.getElementById('resend-phone-otp-btn');
+  const phoneOtpStatus      = document.getElementById('phone-otp-status');
+  const phoneResendTimerEl  = document.getElementById('phone-resend-timer');
+
+  // ─── Countdown helper ────────────────────────────────────────
+  function startResendCountdown(timerEl, resendBtn, seconds = 60) {
+    if (resendBtn) resendBtn.disabled = true;
+    let remaining = seconds;
+    if (timerEl) timerEl.textContent = `(${remaining}s)`;
+    const interval = setInterval(() => {
+      remaining--;
+      if (timerEl) timerEl.textContent = `(${remaining}s)`;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        if (resendBtn) resendBtn.disabled = false;
+        if (timerEl) timerEl.textContent = '';
+      }
+    }, 1000);
+    return interval;
+  }
+
+  // ─── Status message helpers ──────────────────────────────────
+  function setOtpStatus(el, msg, type) {
+    // type: 'success' | 'error' | 'info'
+    const colors = { success: '#10b981', error: '#ef4444', info: '#f59e0b' };
+    el.textContent = msg;
+    el.style.color = colors[type] || '#94a3b8';
+  }
+
+  // ============================================================
+  // EMAIL OTP
+  // ============================================================
+  async function sendEmailOtp() {
+    const email = emailField ? emailField.value.trim() : '';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (errorContactEmail) {
+        errorContactEmail.textContent = 'Please enter a valid email address first.';
         errorContactEmail.style.display = 'block';
         errorContactEmail.style.color = '#ef4444';
-        validateField(emailField);
-      }
-    });
-  }
-
-  async function validateEmailOnServer(email) {
-    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      emailValidationState = 'invalid';
-      errorContactEmail.textContent = 'Please enter a valid corporate email address format.';
-      errorContactEmail.style.display = 'block';
-      errorContactEmail.style.color = '#ef4444';
-      if (emailStatusIcon) emailStatusIcon.style.display = 'none';
-      if (verifyEmailBtn) {
-         verifyEmailBtn.textContent = 'Verify Email';
-         verifyEmailBtn.disabled = false;
-      }
-      return false;
-    }
-    
-    emailValidationState = 'loading';
-    if (emailStatusIcon) {
-      emailStatusIcon.style.display = 'block';
-      emailStatusIcon.innerHTML = `<svg style="width: 16px; height: 16px; animation: animate-spin 1s linear infinite; color: #f59e0b;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity: 0.25;"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-    }
-    errorContactEmail.textContent = 'Verifying email domain...';
-    errorContactEmail.style.display = 'block';
-    errorContactEmail.style.color = '#f59e0b';
-    if (verifyEmailBtn) {
-       verifyEmailBtn.textContent = 'Verifying...';
-       verifyEmailBtn.disabled = true;
-    }
-
-    try {
-      const response = await fetch('/api/email/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email })
-      });
-      const data = await response.json();
-      
-      if (data.valid) {
-        emailValidationState = 'valid';
-        errorContactEmail.textContent = 'Email Verified ✓';
-        errorContactEmail.style.color = '#10b981';
-        if (emailStatusIcon) emailStatusIcon.style.display = 'none';
-        if (verifyEmailBtn) {
-           verifyEmailBtn.textContent = 'Verified';
-           verifyEmailBtn.style.display = 'none';
-        }
-        validateField(emailField); // trigger re-validation for styling
-        return true;
-      } else {
-        emailValidationState = 'invalid';
-        errorContactEmail.textContent = data.error || 'Email not available';
-        errorContactEmail.style.color = '#ef4444';
-        if (emailStatusIcon) emailStatusIcon.style.display = 'none';
-        if (verifyEmailBtn) {
-           verifyEmailBtn.textContent = 'Verify Email';
-           verifyEmailBtn.disabled = false;
-        }
-        validateField(emailField);
-        return false;
-      }
-    } catch (error) {
-      console.error('Email validation error:', error);
-      emailValidationState = 'valid';
-      errorContactEmail.textContent = 'Email Verified ✓';
-      errorContactEmail.style.color = '#10b981';
-      if (emailStatusIcon) emailStatusIcon.style.display = 'none';
-      if (verifyEmailBtn) {
-         verifyEmailBtn.textContent = 'Verified';
-         verifyEmailBtn.style.display = 'none';
-      }
-      validateField(emailField);
-      return true;
-    }
-  }
-
-  function validateField(field) {
-    if (!field) return true;
-    
-    const formGroup = field.closest('.form-group');
-    if (!formGroup) return true;
-
-    // Utilize standard native browser validation constraint rules
-    let isValid = field.checkValidity();
-
-    if (field.id === 'contact-email') {
-      if (emailValidationState === 'invalid') {
-        isValid = false;
-      }
-    }
-
-    if (isValid) {
-      formGroup.classList.remove('invalid');
-      if (field.id === 'contact-email') {
-        if (emailValidationState === 'valid') {
-            errorContactEmail.style.display = 'block';
-            errorContactEmail.style.color = '#10b981';
-        } else if (emailValidationState === 'loading') {
-            errorContactEmail.style.display = 'block';
-            errorContactEmail.style.color = '#f59e0b';
-        } else {
-            errorContactEmail.style.display = 'none';
-        }
-      }
-      updateProgressMeter();
-      return true;
-    } else {
-      formGroup.classList.add('invalid');
-      if (field.id === 'contact-email' && emailValidationState === 'invalid') {
-         errorContactEmail.style.display = 'block';
-         errorContactEmail.style.color = '#ef4444';
-      }
-      updateProgressMeter();
-      return false;
-    }
-  }
-
-  // Attach immediate 'input' and 'change' listeners for fluid responsive correction
-  fields.forEach(field => {
-    if (!field) return;
-
-    // Typing and selections
-    field.addEventListener('input', () => {
-      if (field.id === 'contact-email') {
-        emailValidationState = 'idle';
-        if (verifyEmailBtn) {
-           verifyEmailBtn.style.display = 'inline-block';
-           verifyEmailBtn.textContent = 'Verify Email';
-           verifyEmailBtn.disabled = false;
-        }
-      }
-      validateField(field);
-    });
-
-    field.addEventListener('change', () => {
-      validateField(field);
-    });
-    
-    field.addEventListener('blur', () => {
-      validateField(field);
-    });
-
-    // Dynamic section highlight indicators on focus
-    field.addEventListener('focus', () => {
-      // Remove active-section class from all sections
-      document.querySelectorAll('.form-section').forEach(sec => {
-        sec.classList.remove('active-section');
-      });
-
-      // Add active-section class to focused field's fieldset container
-      const parentSection = field.closest('.form-section');
-      if (parentSection) {
-        parentSection.classList.add('active-section');
-      }
-    });
-  });
-
-  // Intercept the submission pipeline
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Halt standard native HTML redirect/refresh
-    
-    // Clear previous alert states
-    hideNotification();
-
-    // Force await email validation if not yet complete
-    if (emailField && emailField.value.trim() !== '' && (emailValidationState === 'idle' || emailValidationState === 'loading')) {
-      submitBtn.disabled = true;
-      submitBtnText.textContent = 'Verifying...';
-      await validateEmailOnServer(emailField.value.trim());
-      submitBtn.disabled = false;
-      submitBtnText.textContent = 'Submit Enquiry & Request Quote';
-    }
-
-    // Loop through all validation items
-    let formIsValid = true;
-    fields.forEach(field => {
-      const fieldIsValid = validateField(field);
-      if (!fieldIsValid) {
-        formIsValid = false;
-      }
-    });
-
-    if (emailValidationState === 'invalid') {
-       formIsValid = false;
-    }
-
-    // Block submission if any validation checks fail
-    if (!formIsValid) {
-      showNotification('error', 'Please resolve all highlighted technical specification validation errors before transmitting.');
-      
-      // Scroll to the first invalid field gracefully
-      const firstInvalid = document.querySelector('.form-group.invalid');
-      if (firstInvalid) {
-        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       return;
     }
 
-    // Pass: Instantly toggle submission CTA element statuses to avoid dual submissions
+    if (sendEmailOtpBtn) {
+      sendEmailOtpBtn.textContent = 'Sending...';
+      sendEmailOtpBtn.disabled = true;
+    }
+    if (errorContactEmail) errorContactEmail.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/otp/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        if (emailOtpRow) emailOtpRow.style.display = 'block';
+        if (sendEmailOtpBtn) sendEmailOtpBtn.style.display = 'none';
+        setOtpStatus(emailOtpStatus, `✉ OTP sent to ${email}. Check your inbox.`, 'info');
+        emailResendTimer = startResendCountdown(emailResendTimerEl, resendEmailOtpBtn, 60);
+      } else {
+        if (sendEmailOtpBtn) {
+          sendEmailOtpBtn.textContent = 'Send Email OTP';
+          sendEmailOtpBtn.disabled = false;
+        }
+        setOtpStatus(emailOtpStatus, data.error || 'Failed to send OTP. Try again.', 'error');
+        if (emailOtpRow) emailOtpRow.style.display = 'block';
+      }
+    } catch (err) {
+      if (sendEmailOtpBtn) {
+        sendEmailOtpBtn.textContent = 'Send Email OTP';
+        sendEmailOtpBtn.disabled = false;
+      }
+      setOtpStatus(emailOtpStatus, 'Network error. Please try again.', 'error');
+      if (emailOtpRow) emailOtpRow.style.display = 'block';
+    }
+  }
+
+  async function verifyEmailOtp() {
+    const email = emailField ? emailField.value.trim() : '';
+    const otp = emailOtpInput ? emailOtpInput.value.trim() : '';
+
+    if (!otp || otp.length !== 6) {
+      setOtpStatus(emailOtpStatus, 'Please enter the 6-digit OTP.', 'error');
+      return;
+    }
+
+    if (verifyEmailOtpBtn) {
+      verifyEmailOtpBtn.textContent = 'Verifying...';
+      verifyEmailOtpBtn.disabled = true;
+    }
+
+    try {
+      const res = await fetch('/api/otp/email/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        emailOtpVerified = true;
+        setOtpStatus(emailOtpStatus, '✅ Email verified successfully!', 'success');
+        if (verifyEmailOtpBtn) verifyEmailOtpBtn.style.display = 'none';
+        if (emailOtpInput) {
+          emailOtpInput.disabled = true;
+          emailOtpInput.style.borderColor = '#10b981';
+        }
+        if (resendEmailOtpBtn) resendEmailOtpBtn.style.display = 'none';
+        if (emailResendTimerEl) emailResendTimerEl.textContent = '';
+        if (emailResendTimer) clearInterval(emailResendTimer);
+        if (errorContactEmail) {
+          errorContactEmail.textContent = '✅ Email Verified';
+          errorContactEmail.style.color = '#10b981';
+          errorContactEmail.style.display = 'block';
+        }
+      } else {
+        emailOtpVerified = false;
+        setOtpStatus(emailOtpStatus, data.error || 'Incorrect OTP. Try again.', 'error');
+        if (verifyEmailOtpBtn) {
+          verifyEmailOtpBtn.textContent = 'Verify OTP';
+          verifyEmailOtpBtn.disabled = false;
+        }
+      }
+    } catch (err) {
+      setOtpStatus(emailOtpStatus, 'Network error. Please try again.', 'error');
+      if (verifyEmailOtpBtn) {
+        verifyEmailOtpBtn.textContent = 'Verify OTP';
+        verifyEmailOtpBtn.disabled = false;
+      }
+    }
+  }
+
+  if (sendEmailOtpBtn) sendEmailOtpBtn.addEventListener('click', sendEmailOtp);
+  if (verifyEmailOtpBtn) verifyEmailOtpBtn.addEventListener('click', verifyEmailOtp);
+  if (resendEmailOtpBtn) {
+    resendEmailOtpBtn.addEventListener('click', () => {
+      if (emailResendTimer) clearInterval(emailResendTimer);
+      sendEmailOtp();
+    });
+  }
+
+  // Reset OTP state when email is changed
+  if (emailField) {
+    emailField.addEventListener('input', () => {
+      emailOtpVerified = false;
+      if (emailOtpRow) emailOtpRow.style.display = 'none';
+      if (sendEmailOtpBtn) {
+        sendEmailOtpBtn.style.display = 'inline-block';
+        sendEmailOtpBtn.textContent = 'Send Email OTP';
+        sendEmailOtpBtn.disabled = false;
+      }
+      if (emailOtpInput) {
+        emailOtpInput.value = '';
+        emailOtpInput.disabled = false;
+        emailOtpInput.style.borderColor = '';
+      }
+      if (verifyEmailOtpBtn) {
+        verifyEmailOtpBtn.style.display = 'inline-block';
+        verifyEmailOtpBtn.textContent = 'Verify OTP';
+        verifyEmailOtpBtn.disabled = false;
+      }
+      if (emailOtpStatus) emailOtpStatus.textContent = '';
+      if (errorContactEmail) errorContactEmail.style.display = 'none';
+      if (emailResendTimer) clearInterval(emailResendTimer);
+      validateField(emailField);
+    });
+  }
+
+  // ============================================================
+  // PHONE OTP
+  // ============================================================
+  async function sendPhoneOtp() {
+    const phone = phoneField ? phoneField.value.trim() : '';
+    if (!phone || !/^\+?[0-9]{10,15}$/.test(phone)) {
+      if (errorContactPhone) {
+        errorContactPhone.textContent = 'Please enter a valid phone number first (with country code e.g. +91).';
+        errorContactPhone.style.display = 'block';
+        errorContactPhone.style.color = '#ef4444';
+      }
+      return;
+    }
+
+    // Format phone number to have country code prefix (default to +91 if none given)
+    let formattedPhone = phone;
+    if (!phone.startsWith('+')) {
+      formattedPhone = '+91' + phone;
+    }
+
+    if (sendPhoneOtpBtn) {
+      sendPhoneOtpBtn.textContent = 'Sending...';
+      sendPhoneOtpBtn.disabled = true;
+    }
+    if (errorContactPhone) errorContactPhone.style.display = 'none';
+
+    // Check if Firebase client is ready
+    if (auth && recaptchaVerifier) {
+      try {
+        const result = await auth.signInWithPhoneNumber(formattedPhone, recaptchaVerifier);
+        confirmationResult = result;
+        if (phoneOtpRow) phoneOtpRow.style.display = 'block';
+        if (sendPhoneOtpBtn) sendPhoneOtpBtn.style.display = 'none';
+        setOtpStatus(phoneOtpStatus, `📱 OTP sent via SMS to ${formattedPhone}.`, 'info');
+        phoneResendTimer = startResendCountdown(phoneResendTimerEl, resendPhoneOtpBtn, 60);
+      } catch (err) {
+        console.error("Firebase Phone OTP failed, falling back:", err);
+        // Reset recaptcha
+        if (window.grecaptcha && recaptchaVerifier) {
+          recaptchaVerifier.clear();
+          recaptchaVerifier = new firebase.auth.RecaptchaVerifier('send-phone-otp-btn', { 'size': 'invisible' });
+        }
+        fallbackSendPhoneOtp(phone);
+      }
+    } else {
+      fallbackSendPhoneOtp(phone);
+    }
+  }
+
+  async function fallbackSendPhoneOtp(phone) {
+    try {
+      const res = await fetch('/api/otp/phone/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        if (phoneOtpRow) phoneOtpRow.style.display = 'block';
+        if (sendPhoneOtpBtn) sendPhoneOtpBtn.style.display = 'none';
+        setOtpStatus(phoneOtpStatus, `📱 OTP sent to ${phone}.`, 'info');
+        phoneResendTimer = startResendCountdown(phoneResendTimerEl, resendPhoneOtpBtn, 60);
+      } else {
+        if (sendPhoneOtpBtn) {
+          sendPhoneOtpBtn.textContent = 'Send OTP';
+          sendPhoneOtpBtn.disabled = false;
+        }
+        setOtpStatus(phoneOtpStatus, data.error || 'Failed to send OTP. Try again.', 'error');
+        if (phoneOtpRow) phoneOtpRow.style.display = 'block';
+      }
+    } catch (err) {
+      if (sendPhoneOtpBtn) {
+        sendPhoneOtpBtn.textContent = 'Send OTP';
+        sendPhoneOtpBtn.disabled = false;
+      }
+      setOtpStatus(phoneOtpStatus, 'Network error. Please try again.', 'error');
+      if (phoneOtpRow) phoneOtpRow.style.display = 'block';
+    }
+  }
+
+  async function verifyPhoneOtp() {
+    const phone = phoneField ? phoneField.value.trim() : '';
+    const otp = phoneOtpInput ? phoneOtpInput.value.trim() : '';
+
+    if (!otp || otp.length !== 6) {
+      setOtpStatus(phoneOtpStatus, 'Please enter the 6-digit OTP.', 'error');
+      return;
+    }
+
+    if (verifyPhoneOtpBtn) {
+      verifyPhoneOtpBtn.textContent = 'Verifying...';
+      verifyPhoneOtpBtn.disabled = true;
+    }
+
+    if (confirmationResult) {
+      // Verify via Firebase client Auth
+      try {
+        const userCredential = await confirmationResult.confirm(otp);
+        console.log("Firebase phone auth confirmed:", userCredential.user);
+        phoneOtpVerified = true;
+        phoneOtpSuccessActions();
+      } catch (err) {
+        console.error("Firebase verify failed:", err);
+        setOtpStatus(phoneOtpStatus, 'Incorrect OTP. Please try again.', 'error');
+        if (verifyPhoneOtpBtn) {
+          verifyPhoneOtpBtn.textContent = 'Verify OTP';
+          verifyPhoneOtpBtn.disabled = false;
+        }
+      }
+    } else {
+      // Fallback backend validation
+      try {
+        const res = await fetch('/api/otp/phone/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, otp })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          phoneOtpVerified = true;
+          phoneOtpSuccessActions();
+        } else {
+          phoneOtpVerified = false;
+          setOtpStatus(phoneOtpStatus, data.error || 'Incorrect OTP. Try again.', 'error');
+          if (verifyPhoneOtpBtn) {
+            verifyPhoneOtpBtn.textContent = 'Verify OTP';
+            verifyPhoneOtpBtn.disabled = false;
+          }
+        }
+      } catch (err) {
+        setOtpStatus(phoneOtpStatus, 'Network error. Please try again.', 'error');
+        if (verifyPhoneOtpBtn) {
+          verifyPhoneOtpBtn.textContent = 'Verify OTP';
+          verifyPhoneOtpBtn.disabled = false;
+        }
+      }
+    }
+  }
+
+  function phoneOtpSuccessActions() {
+    setOtpStatus(phoneOtpStatus, '✅ Phone verified successfully!', 'success');
+    if (verifyPhoneOtpBtn) verifyPhoneOtpBtn.style.display = 'none';
+    if (phoneOtpInput) {
+      phoneOtpInput.disabled = true;
+      phoneOtpInput.style.borderColor = '#10b981';
+    }
+    if (resendPhoneOtpBtn) resendPhoneOtpBtn.style.display = 'none';
+    if (phoneResendTimerEl) phoneResendTimerEl.textContent = '';
+    if (phoneResendTimer) clearInterval(phoneResendTimer);
+    if (errorContactPhone) {
+      errorContactPhone.textContent = '✅ Phone Verified';
+      errorContactPhone.style.color = '#10b981';
+      errorContactPhone.style.display = 'block';
+    }
+  }
+
+  if (sendPhoneOtpBtn) sendPhoneOtpBtn.addEventListener('click', sendPhoneOtp);
+  if (verifyPhoneOtpBtn) verifyPhoneOtpBtn.addEventListener('click', verifyPhoneOtp);
+  if (resendPhoneOtpBtn) {
+    resendPhoneOtpBtn.addEventListener('click', () => {
+      if (phoneResendTimer) clearInterval(phoneResendTimer);
+      sendPhoneOtp();
+    });
+  }
+
+  // Reset phone OTP state when phone number is changed
+  if (phoneField) {
+    phoneField.addEventListener('input', () => {
+      phoneOtpVerified = false;
+      if (phoneOtpRow) phoneOtpRow.style.display = 'none';
+      if (sendPhoneOtpBtn) {
+        sendPhoneOtpBtn.style.display = 'inline-block';
+        sendPhoneOtpBtn.textContent = 'Send OTP';
+        sendPhoneOtpBtn.disabled = false;
+      }
+      if (phoneOtpInput) {
+        phoneOtpInput.value = '';
+        phoneOtpInput.disabled = false;
+        phoneOtpInput.style.borderColor = '';
+      }
+      if (verifyPhoneOtpBtn) {
+        verifyPhoneOtpBtn.style.display = 'inline-block';
+        verifyPhoneOtpBtn.textContent = 'Verify OTP';
+        verifyPhoneOtpBtn.disabled = false;
+      }
+      if (phoneOtpStatus) phoneOtpStatus.textContent = '';
+      if (errorContactPhone) errorContactPhone.style.display = 'none';
+      if (phoneResendTimer) clearInterval(phoneResendTimer);
+      validateField(phoneField);
+    });
+  }
+
+  // ============================================================
+  // FIELD VALIDATION
+  // ============================================================
+  function validateField(field) {
+    if (!field) return true;
+    const formGroup = field.closest('.form-group');
+    if (!formGroup) return true;
+    let isValid = field.checkValidity();
+    if (isValid) {
+      formGroup.classList.remove('invalid');
+      updateProgressMeter();
+      return true;
+    } else {
+      formGroup.classList.add('invalid');
+      updateProgressMeter();
+      return false;
+    }
+  }
+
+  // Attach listeners to all form fields
+  fields.forEach(field => {
+    if (!field) return;
+    field.addEventListener('input', () => validateField(field));
+    field.addEventListener('change', () => validateField(field));
+    field.addEventListener('blur', () => validateField(field));
+    field.addEventListener('focus', () => {
+      document.querySelectorAll('.form-section').forEach(sec => sec.classList.remove('active-section'));
+      const parentSection = field.closest('.form-section');
+      if (parentSection) parentSection.classList.add('active-section');
+    });
+  });
+
+  // ============================================================
+  // FORM SUBMISSION
+  // ============================================================
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideNotification();
+
+    // Validate all fields first
+    let formIsValid = true;
+    fields.forEach(field => {
+      if (!validateField(field)) formIsValid = false;
+    });
+
+    if (!formIsValid) {
+      showNotification('error', 'Please resolve all highlighted validation errors before submitting.');
+      const firstInvalid = document.querySelector('.form-group.invalid');
+      if (firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // Enforce email OTP verification
+    if (!emailOtpVerified) {
+      showNotification('error', 'Please verify your email address with OTP before submitting.');
+      const emailGroup = document.getElementById('group-email');
+      if (emailGroup) emailGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // Enforce phone OTP verification
+    if (!phoneOtpVerified) {
+      showNotification('error', 'Please verify your phone number with OTP before submitting.');
+      const phoneGroup = document.getElementById('group-phone');
+      if (phoneGroup) phoneGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // Disable submit button
     submitBtn.disabled = true;
     submitBtnText.textContent = 'Transmitting Data...';
     showNotification('loading', 'Securely encapsulating data & routing request to gateway...');
 
-    // Construct detailed payload for the API
+    // Build payload
     const nameVal = document.getElementById('contact-name').value.trim();
     const phoneVal = document.getElementById('contact-phone').value.trim();
     const emailVal = document.getElementById('contact-email').value.trim();
     let typeVal = document.getElementById('project-type').value;
-    if (typeVal === 'Other') {
-      typeVal = document.getElementById('custom-project-type').value.trim();
-    }
+    if (typeVal === 'Other') typeVal = document.getElementById('custom-project-type').value.trim();
     const locationVal = document.getElementById('project-location').value.trim();
     const areaVal = document.getElementById('project-area').value.trim();
     const budgetVal = document.getElementById('project-budget').value;
     const timelineVal = document.getElementById('project-timeline').value;
     const requirementsVal = document.getElementById('project-requirements').value.trim();
 
-    // Construct a comprehensive consolidated requirements string
     let combinedRequirements = `Project Type: ${typeVal}\nLocation: ${locationVal}\nArea: ${areaVal} Sq. Ft.\nBudget: ${budgetVal}\nTimeline: ${timelineVal}`;
-    if (requirementsVal) {
-      combinedRequirements += `\n\nAdditional Comments: ${requirementsVal}`;
-    }
+    if (requirementsVal) combinedRequirements += `\n\nAdditional Comments: ${requirementsVal}`;
 
     const payload = {
       fullName: nameVal,
@@ -379,66 +639,41 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      // Point directly to our backend endpoint. 
-      // Using a relative path makes it portable across local development, local tunnels, and production servers.
-      const apiEndpoint = '/api/lms/leads/ingest';
-
-      // Formulate asymmetric async POST transaction to the ingestion system
-      const response = await fetch(apiEndpoint, {
+      const response = await fetch('/api/lms/leads/ingest', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       if (response.ok) {
         const result = await response.json();
-        
-        // Handle duplicate detection returned from API server (HTTP 200)
+
         if (result.message && (result.message.includes("already exists") || result.message.includes("duplicate"))) {
           showNotification('error', 'Lead registration skipped: This phone number or email address is already registered in our system.');
-          
-          // Re-enable submit button to allow corrections/re-attempts
           submitBtn.disabled = false;
           submitBtnText.textContent = 'Submit Enquiry & Request Quote';
           return;
         }
 
-        // Success lifecycle state
-        showNotification('success', 'Enquiry ingested successfully! Redirecting to contact desk details page...');
-        
-        // Reset all form visual states & properties
+        showNotification('success', 'Enquiry submitted successfully! A confirmation email has been sent to your inbox.');
         form.reset();
         updateProgressMeter();
+        emailOtpVerified = false;
+        phoneOtpVerified = false;
         fields.forEach(field => {
-          const formGroup = field.closest('.form-group');
-          if (formGroup) {
-            formGroup.classList.remove('invalid');
-          }
+          const formGroup = field && field.closest('.form-group');
+          if (formGroup) formGroup.classList.remove('invalid');
         });
 
-        // Redirect to external main site after timeout (Flow 1 Requirement)
         setTimeout(() => {
           window.location.href = 'https://www.arkooprebuild.com';
-        }, 800);
-
+        }, 1200);
       } else {
-        // API responded with an error status (e.g. 500, 400)
         throw new Error(`Server returned HTTP status ${response.status}`);
       }
-
     } catch (error) {
-      // Fail-safe catch block for offline instances, DNS drops, or active CORS blocks
       console.error('Lead Transmission Pipeline Exception:', error);
-      
-      showNotification(
-        'error', 
-        'Technical ingestion failed. Please verify internet connection or contact us directly at arkooprebuild.com/contact.html.'
-      );
-      
-      // Revive submit CTA element controls to allow corrections/re-attempts
+      showNotification('error', 'Technical submission failed. Please verify your internet connection or contact us at arkooprebuild.com/contact.html');
       submitBtn.disabled = false;
       submitBtnText.textContent = 'Submit Enquiry & Request Quote';
     }

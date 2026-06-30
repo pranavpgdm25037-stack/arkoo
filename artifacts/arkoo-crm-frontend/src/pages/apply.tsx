@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Send, Loader2, Building2, User, MapPin, Ruler, Wallet, Clock, FileText, AlertCircle } from "lucide-react";
+import { CheckCircle2, Send, Loader2, Building2, User, MapPin, Ruler, Wallet, Clock, FileText, AlertCircle, ShieldCheck, Smartphone, Mail } from "lucide-react";
+import firebase from "firebase/compat/app";
+import "firebase/compat/auth";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormData {
@@ -300,12 +302,67 @@ export default function ApplyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isPreFilled, setIsPreFilled] = useState(false);
 
-  const [emailValidationState, setEmailValidationState] = useState<'idle' | 'loading' | 'valid' | 'invalid'>('idle');
-  const [emailValidationMessage, setEmailValidationMessage] = useState('');
-  
+  // Email OTP state
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailOtpInput, setEmailOtpInput] = useState('');
+  const [emailOtpVerified, setEmailOtpVerified] = useState(false);
+  const [emailOtpLoading, setEmailOtpLoading] = useState(false);
+  const [emailOtpError, setEmailOtpError] = useState('');
+  const [emailOtpSuccess, setEmailOtpSuccess] = useState('');
+  const [emailResendCountdown, setEmailResendCountdown] = useState(0);
+  const emailResendRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Phone OTP state
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneOtpInput, setPhoneOtpInput] = useState('');
+  const [phoneOtpVerified, setPhoneOtpVerified] = useState(false);
+  const [phoneOtpLoading, setPhoneOtpLoading] = useState(false);
+  const [phoneOtpError, setPhoneOtpError] = useState('');
+  const [phoneOtpSuccess, setPhoneOtpSuccess] = useState('');
+  const [phoneResendCountdown, setPhoneResendCountdown] = useState(0);
+  const phoneResendRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const [leadId, setLeadId] = useState<string>("");
 
+  // Firebase client Auth refs
+  const authRef = useRef<firebase.auth.Auth | null>(null);
+  const recaptchaVerifierRef = useRef<firebase.auth.RecaptchaVerifier | null>(null);
+  const confirmationResultRef = useRef<firebase.auth.ConfirmationResult | null>(null);
+
+  // Initialize Firebase client dynamically
+  useEffect(() => {
+    const initFirebase = async () => {
+      try {
+        const res = await fetch("/api/otp/config");
+        const config = await res.json();
+        if (!config.apiKey) return;
+        
+        // Prevent duplicate initialization error
+        if (firebase.apps.length === 0) {
+          firebase.initializeApp(config);
+        }
+        
+        const auth = firebase.auth();
+        auth.useDeviceLanguage();
+        authRef.current = auth;
+
+        // Initialize invisible recaptcha targeting the button id
+        recaptchaVerifierRef.current = new firebase.auth.RecaptchaVerifier("send-phone-otp-btn-react", {
+          size: "invisible",
+          callback: () => {
+            // recaptcha resolved
+          }
+        });
+      } catch (err) {
+        console.error("Failed to initialize Firebase client:", err);
+      }
+    };
+    initFirebase();
+  }, []);
+
+  // ─── Prefill from URL params ──────────────────────────────────────────────
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -319,11 +376,10 @@ export default function ApplyPage() {
       const timelineParam = params.get("timeline") || "";
       const leadIdParam = params.get("leadId") || "";
 
-      if (leadIdParam) {
-        setLeadId(leadIdParam);
-      }
+      if (leadIdParam) setLeadId(leadIdParam);
 
       if (nameParam || emailParam || phoneParam || locParam) {
+        setIsPreFilled(true);
         setForm(prev => ({
           ...prev,
           fullname: nameParam || prev.fullname,
@@ -339,49 +395,225 @@ export default function ApplyPage() {
     }
   }, []);
 
+  // ─── OTP countdown helpers ────────────────────────────────────────────────
+  function startResendCountdown(
+    setCountdown: React.Dispatch<React.SetStateAction<number>>,
+    intervalRef: React.MutableRefObject<ReturnType<typeof setInterval> | null>,
+    seconds = 60
+  ) {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setCountdown(seconds);
+    let remaining = seconds;
+    intervalRef.current = setInterval(() => {
+      remaining -= 1;
+      setCountdown(remaining);
+      if (remaining <= 0) {
+        clearInterval(intervalRef.current!);
+        intervalRef.current = null;
+      }
+    }, 1000);
+  }
+
+  // ─── Email OTP ────────────────────────────────────────────────────────────
+  const sendEmailOtp = async () => {
+    const email = form.emailaddress.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailOtpError('Please enter a valid email address first.');
+      return;
+    }
+    setEmailOtpLoading(true);
+    setEmailOtpError('');
+    setEmailOtpSuccess('');
+    try {
+      const res = await fetch('/api/otp/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailOtpSent(true);
+        setEmailOtpSuccess(`OTP sent to ${email}. Check your inbox.`);
+        startResendCountdown(setEmailResendCountdown, emailResendRef);
+      } else {
+        setEmailOtpError(data.error || 'Failed to send OTP. Try again.');
+        setEmailOtpSent(true); // Still show OTP row
+      }
+    } catch {
+      setEmailOtpError('Network error. Please try again.');
+      setEmailOtpSent(true);
+    } finally {
+      setEmailOtpLoading(false);
+    }
+  };
+
+  const verifyEmailOtp = async () => {
+    if (!emailOtpInput || emailOtpInput.length !== 6) {
+      setEmailOtpError('Please enter the 6-digit OTP.');
+      return;
+    }
+    setEmailOtpLoading(true);
+    setEmailOtpError('');
+    try {
+      const res = await fetch('/api/otp/email/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.emailaddress.trim(), otp: emailOtpInput })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailOtpVerified(true);
+        setEmailOtpSuccess('✅ Email verified successfully!');
+        setEmailOtpError('');
+        if (errors.emailaddress) setErrors(prev => { const n = { ...prev }; delete n.emailaddress; return n; });
+      } else {
+        setEmailOtpError(data.error || 'Incorrect OTP. Try again.');
+      }
+    } catch {
+      setEmailOtpError('Network error. Please try again.');
+    } finally {
+      setEmailOtpLoading(false);
+    }
+  };
+
+  // ─── Phone OTP ────────────────────────────────────────────────────────────
+  const sendPhoneOtp = async () => {
+    const phone = form.phonenumber.trim();
+    if (!phone) {
+      setPhoneOtpError('Please enter a phone number first.');
+      return;
+    }
+
+    let formattedPhone = phone;
+    if (!phone.startsWith('+')) {
+      formattedPhone = '+91' + phone;
+    }
+
+    setPhoneOtpLoading(true);
+    setPhoneOtpError('');
+    setPhoneOtpSuccess('');
+
+    if (authRef.current && recaptchaVerifierRef.current) {
+      try {
+        const result = await authRef.current.signInWithPhoneNumber(formattedPhone, recaptchaVerifierRef.current);
+        confirmationResultRef.current = result;
+        setPhoneOtpSent(true);
+        setPhoneOtpSuccess(`OTP sent via SMS to ${formattedPhone}.`);
+        startResendCountdown(setPhoneResendCountdown, phoneResendRef);
+      } catch (err: any) {
+        console.error("Firebase Auth SMS failed, falling back to API:", err);
+        // Reset recaptcha
+        try {
+          if (recaptchaVerifierRef.current) {
+            recaptchaVerifierRef.current.clear();
+          }
+          recaptchaVerifierRef.current = new firebase.auth.RecaptchaVerifier("send-phone-otp-btn-react", {
+            size: "invisible"
+          });
+        } catch (e) {}
+        await fallbackSendPhoneOtp(phone);
+      } finally {
+        setPhoneOtpLoading(false);
+      }
+    } else {
+      await fallbackSendPhoneOtp(phone);
+      setPhoneOtpLoading(false);
+    }
+  };
+
+  const fallbackSendPhoneOtp = async (phone: string) => {
+    try {
+      const res = await fetch('/api/otp/phone/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPhoneOtpSent(true);
+        setPhoneOtpSuccess(`OTP sent to ${phone}.`);
+        startResendCountdown(setPhoneResendCountdown, phoneResendRef);
+      } else {
+        setPhoneOtpError(data.error || 'Failed to send OTP. Try again.');
+        setPhoneOtpSent(true);
+      }
+    } catch {
+      setPhoneOtpError('Network error. Please try again.');
+      setPhoneOtpSent(true);
+    }
+  };
+
+  const verifyPhoneOtp = async () => {
+    if (!phoneOtpInput || phoneOtpInput.length !== 6) {
+      setPhoneOtpError('Please enter the 6-digit OTP.');
+      return;
+    }
+    setPhoneOtpLoading(true);
+    setPhoneOtpError('');
+    
+    if (confirmationResultRef.current) {
+      try {
+        const userCredential = await confirmationResultRef.current.confirm(phoneOtpInput);
+        console.log("Firebase Phone Auth confirmed:", userCredential.user);
+        setPhoneOtpVerified(true);
+        setPhoneOtpSuccess('✅ Phone verified successfully!');
+        setPhoneOtpError('');
+        if (errors.phonenumber) setErrors(prev => { const n = { ...prev }; delete n.phonenumber; return n; });
+      } catch (err) {
+        console.error("Firebase Phone verify error:", err);
+        setPhoneOtpError('Incorrect OTP. Please try again.');
+      } finally {
+        setPhoneOtpLoading(false);
+      }
+    } else {
+      // Fallback backend validation
+      try {
+        const res = await fetch('/api/otp/phone/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: form.phonenumber.trim(), otp: phoneOtpInput })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setPhoneOtpVerified(true);
+          setPhoneOtpSuccess('✅ Phone verified successfully!');
+          setPhoneOtpError('');
+          if (errors.phonenumber) setErrors(prev => { const n = { ...prev }; delete n.phonenumber; return n; });
+        } else {
+          setPhoneOtpError(data.error || 'Incorrect OTP. Try again.');
+        }
+      } catch {
+        setPhoneOtpError('Network error. Please try again.');
+      } finally {
+        setPhoneOtpLoading(false);
+      }
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => { const next = { ...prev }; delete next[name]; return next; });
     }
+    // Reset OTP states when user changes email/phone
     if (name === 'emailaddress') {
-      setEmailValidationState('idle');
-      setEmailValidationMessage('');
+      setEmailOtpSent(false);
+      setEmailOtpVerified(false);
+      setEmailOtpInput('');
+      setEmailOtpError('');
+      setEmailOtpSuccess('');
+      setEmailResendCountdown(0);
+      if (emailResendRef.current) clearInterval(emailResendRef.current);
     }
-  };
-
-  const handleEmailBlur = async () => {
-    const emailToVerify = form.emailaddress;
-    if (!emailToVerify) {
-      setEmailValidationState('idle');
-      return;
-    }
-    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(emailToVerify)) {
-      setEmailValidationState('invalid');
-      setEmailValidationMessage('Invalid format');
-      return;
-    }
-    
-    setEmailValidationState('loading');
-    try {
-      const response = await fetch('/api/email/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailToVerify })
-      });
-      const data = await response.json();
-      if (data.valid) {
-        setEmailValidationState('valid');
-        setEmailValidationMessage('Verified ✓');
-      } else {
-        setEmailValidationState('invalid');
-        setEmailValidationMessage(data.error || 'Not available');
-      }
-    } catch (error) {
-      console.error('Email validation error:', error);
-      setEmailValidationState('valid');
-      setEmailValidationMessage('Verified ✓');
+    if (name === 'phonenumber') {
+      setPhoneOtpSent(false);
+      setPhoneOtpVerified(false);
+      setPhoneOtpInput('');
+      setPhoneOtpError('');
+      setPhoneOtpSuccess('');
+      setPhoneResendCountdown(0);
+      if (phoneResendRef.current) clearInterval(phoneResendRef.current);
     }
   };
 
@@ -396,8 +628,12 @@ export default function ApplyPage() {
     e.preventDefault();
     setSubmitError(null);
     const validationErrors = validate(form);
-    if (emailValidationState === 'invalid') {
-      validationErrors.emailaddress = emailValidationMessage || "Please enter a valid corporate email address.";
+
+    if (!emailOtpVerified) {
+      validationErrors.emailaddress = 'Please verify your email address with OTP before submitting.';
+    }
+    if (!phoneOtpVerified) {
+      validationErrors.phonenumber = 'Please verify your phone number with OTP before submitting.';
     }
 
     if (Object.keys(validationErrors).length > 0) {
@@ -409,14 +645,9 @@ export default function ApplyPage() {
 
     setIsSubmitting(true);
     try {
-      // Use FormData to allow actual file uploads
       const formData = new FormData();
       formData.append("source", "Arkoo LMS Form");
-      if (leadId) {
-        formData.append("leadId", leadId);
-      }
-      
-      // Append all simple text/number fields
+      if (leadId) formData.append("leadId", leadId);
       Object.entries(form).forEach(([key, value]) => {
         if (value instanceof File) {
           formData.append(key, value);
@@ -425,25 +656,14 @@ export default function ApplyPage() {
         }
       });
 
-      // Submit directly to Render backend to bypass Netlify's 10-second timeout in production
       const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      const submitUrl = isDev 
-        ? "/api/lms/pif/submit"
-        : "https://arkoo-u8sx.onrender.com/api/lms/pif/submit";
+      const submitUrl = isDev ? "/api/lms/pif/submit" : "https://arkoo-u8sx.onrender.com/api/lms/pif/submit";
 
-      const response = await fetch(submitUrl, {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(submitUrl, { method: "POST", body: formData });
 
       if (!response.ok) {
         let errorMsg = `Server error: ${response.status}`;
-        try {
-           const result = await response.json();
-           if (result.error) errorMsg = result.error;
-        } catch (e) {
-           // If not JSON, just use status text
-        }
+        try { const result = await response.json(); if (result.error) errorMsg = result.error; } catch (e) {}
         throw new Error(errorMsg);
       }
 
@@ -523,6 +743,19 @@ export default function ApplyPage() {
                         title="Your Details"
                         subtitle="Contact information so we can reach you"
                       />
+
+                      {/* Pre-filled banner */}
+                      {isPreFilled && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex items-center gap-2.5 mb-4 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs"
+                        >
+                          <ShieldCheck className="w-4 h-4 shrink-0 text-indigo-400" />
+                          <span><strong>Your details were pre-filled</strong> from your initial enquiry. Please verify and complete the remaining fields, then verify your email and phone with OTP.</span>
+                        </motion.div>
+                      )}
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="sm:col-span-2">
                           <Label required>Full Name</Label>
@@ -535,41 +768,132 @@ export default function ApplyPage() {
                             error={errors.fullname}
                           />
                         </div>
-                        <div>
+                        {/* ── Email with OTP ── */}
+                        <div className="sm:col-span-2">
                           <Label required>Email Address</Label>
-                          <TextInput
-                            id="emailaddress"
-                            name="emailaddress"
-                            type="email"
-                            value={form.emailaddress}
-                            onChange={handleChange}
-                            onBlur={handleEmailBlur}
-                            placeholder="you@example.com"
-                            error={errors.emailaddress}
-                            rightElement={
-                              emailValidationState === 'loading' ? (
-                                <svg className="w-4 h-4 animate-spin text-amber-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" style={{ opacity: 0.25 }}></circle>
-                                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                              ) : emailValidationState === 'valid' ? (
-                                <span className="text-xs font-semibold text-emerald-400">{emailValidationMessage}</span>
-                              ) : emailValidationState === 'invalid' ? (
-                                <span className="text-xs font-semibold text-rose-400">Not Available</span>
-                              ) : null
-                            }
-                          />
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-500 pointer-events-none z-10" />
+                            <input
+                              id="emailaddress"
+                              name="emailaddress"
+                              type="email"
+                              value={form.emailaddress}
+                              onChange={handleChange}
+                              disabled={emailOtpVerified}
+                              placeholder="you@example.com"
+                              className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-800/70 border text-slate-100 placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 transition-all disabled:opacity-70 ${
+                                errors.emailaddress ? 'border-rose-500/60' : emailOtpVerified ? 'border-emerald-500/60' : 'border-slate-700/60 hover:border-slate-600'
+                              }`}
+                            />
+                          </div>
+                          {errors.emailaddress && (
+                            <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-1 text-rose-400 text-xs mt-1.5">
+                              <AlertCircle className="w-3 h-3 shrink-0" />{errors.emailaddress}
+                            </motion.p>
+                          )}
+                          {/* Email OTP controls */}
+                          {!emailOtpVerified && (
+                            <div className="mt-2 space-y-2">
+                              {!emailOtpSent ? (
+                                <button type="button" onClick={sendEmailOtp} disabled={emailOtpLoading}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/30 transition-all disabled:opacity-50">
+                                  <Mail className="w-3 h-3" />
+                                  {emailOtpLoading ? 'Sending...' : 'Send Email OTP'}
+                                </button>
+                              ) : (
+                                <div className="space-y-2">
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text" maxLength={6} value={emailOtpInput}
+                                      onChange={e => setEmailOtpInput(e.target.value.replace(/\D/g, ''))}
+                                      placeholder="6-digit OTP"
+                                      className="flex-1 px-3 py-2 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-100 placeholder:text-slate-500 text-sm tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+                                    />
+                                    <button type="button" onClick={verifyEmailOtp} disabled={emailOtpLoading}
+                                      className="px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-50 whitespace-nowrap">
+                                      {emailOtpLoading ? 'Verifying...' : 'Verify OTP'}
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button type="button" onClick={() => { setEmailOtpSent(false); sendEmailOtp(); }}
+                                      disabled={emailResendCountdown > 0 || emailOtpLoading}
+                                      className="text-xs text-indigo-400 underline disabled:opacity-40 disabled:no-underline">Resend OTP</button>
+                                    {emailResendCountdown > 0 && <span className="text-xs text-slate-500">({emailResendCountdown}s)</span>}
+                                  </div>
+                                </div>
+                              )}
+                              {emailOtpError && <p className="text-xs text-rose-400">{emailOtpError}</p>}
+                              {emailOtpSuccess && !emailOtpVerified && <p className="text-xs text-amber-400">{emailOtpSuccess}</p>}
+                            </div>
+                          )}
+                          {emailOtpVerified && (
+                            <p className="flex items-center gap-1 text-xs text-emerald-400 mt-1.5"><CheckCircle2 className="w-3 h-3" />Email verified</p>
+                          )}
                         </div>
-                        <div>
+
+                        {/* ── Phone with OTP ── */}
+                        <div className="sm:col-span-2">
                           <Label required>Phone / Contact Number</Label>
-                          <TextInput
-                            id="phonenumber"
-                            name="phonenumber"
-                            value={form.phonenumber}
-                            onChange={handleChange}
-                            placeholder="+91 98765 43210"
-                            error={errors.phonenumber}
-                          />
+                          <div className="relative">
+                            <Smartphone className="absolute left-3 top-3 w-4 h-4 text-slate-500 pointer-events-none z-10" />
+                            <input
+                              id="phonenumber"
+                              name="phonenumber"
+                              type="tel"
+                              value={form.phonenumber}
+                              onChange={handleChange}
+                              disabled={phoneOtpVerified}
+                              placeholder="+91 98765 43210"
+                              className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-800/70 border text-slate-100 placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 transition-all disabled:opacity-70 ${
+                                errors.phonenumber ? 'border-rose-500/60' : phoneOtpVerified ? 'border-emerald-500/60' : 'border-slate-700/60 hover:border-slate-600'
+                              }`}
+                            />
+                          </div>
+                          {errors.phonenumber && (
+                            <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-1 text-rose-400 text-xs mt-1.5">
+                              <AlertCircle className="w-3 h-3 shrink-0" />{errors.phonenumber}
+                            </motion.p>
+                          )}
+                          {/* Phone OTP controls */}
+                          {!phoneOtpVerified && (
+                            <div className="mt-2 space-y-2">
+                              {!phoneOtpSent ? (
+                                <button type="button" id="send-phone-otp-btn-react" onClick={sendPhoneOtp} disabled={phoneOtpLoading}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/30 transition-all disabled:opacity-50">
+                                  <Smartphone className="w-3 h-3" />
+                                  {phoneOtpLoading ? 'Sending...' : 'Send Phone OTP'}
+                                </button>
+                              ) : (
+                                <div className="space-y-2">
+                                  {/* Hidden recaptcha anchor for react */}
+                                  <div id="recaptcha-container" style={{ display: "none" }} />
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text" maxLength={6} value={phoneOtpInput}
+                                      onChange={e => setPhoneOtpInput(e.target.value.replace(/\D/g, ''))}
+                                      placeholder="6-digit OTP"
+                                      className="flex-1 px-3 py-2 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-100 placeholder:text-slate-500 text-sm tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+                                    />
+                                    <button type="button" onClick={verifyPhoneOtp} disabled={phoneOtpLoading}
+                                      className="px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-50 whitespace-nowrap">
+                                      {phoneOtpLoading ? 'Verifying...' : 'Verify OTP'}
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button type="button" onClick={() => { setPhoneOtpSent(false); sendPhoneOtp(); }}
+                                      disabled={phoneResendCountdown > 0 || phoneOtpLoading}
+                                      className="text-xs text-indigo-400 underline disabled:opacity-40 disabled:no-underline">Resend OTP</button>
+                                    {phoneResendCountdown > 0 && <span className="text-xs text-slate-500">({phoneResendCountdown}s)</span>}
+                                  </div>
+                                </div>
+                              )}
+                              {phoneOtpError && <p className="text-xs text-rose-400">{phoneOtpError}</p>}
+                              {phoneOtpSuccess && !phoneOtpVerified && <p className="text-xs text-amber-400">{phoneOtpSuccess}</p>}
+                            </div>
+                          )}
+                          {phoneOtpVerified && (
+                            <p className="flex items-center gap-1 text-xs text-emerald-400 mt-1.5"><CheckCircle2 className="w-3 h-3" />Phone verified</p>
+                          )}
                         </div>
                       </div>
                     </div>

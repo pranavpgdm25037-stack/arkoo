@@ -78,6 +78,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
     "@types/nodemailer": "^6.4.23",
+    "firebase": "^12.15.0",
     "nodemailer": "^8.0.7"
   }
 }

@@ -162,7 +162,7 @@
               </div>
             </div>
 
-            <!-- Contact Number -->
+            <!-- Contact Number with OTP -->
             <div class="form-group" id="group-phone">
               <label for="contact-phone" class="form-label">
                 Contact Number <span class="required-indicator">*</span>
@@ -181,13 +181,26 @@
                   pattern="^\+?[0-9]{10,15}$"
                 >
               </div>
+              <!-- Phone OTP Row -->
+              <div id="phone-otp-row" style="display:none; margin-top:8px;">
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <input type="text" id="phone-otp-input" maxlength="6" placeholder="Enter 6-digit OTP" style="flex:1; padding:8px 12px; border-radius:8px; background:#1e293b; border:1px solid #334155; color:#e2e8f0; font-size:0.9rem; letter-spacing:4px; font-family:monospace;">
+                  <button type="button" id="verify-phone-otp-btn" style="padding:8px 14px; font-size:0.8rem; font-weight:600; border-radius:8px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; color:#fff; cursor:pointer; white-space:nowrap;">Verify OTP</button>
+                </div>
+                <div id="phone-otp-status" style="font-size:0.8rem; margin-top:5px;"></div>
+                <div style="margin-top:6px;">
+                  <button type="button" id="resend-phone-otp-btn" style="font-size:0.78rem; background:none; border:none; color:#6366f1; cursor:pointer; text-decoration:underline;">Resend OTP</button>
+                  <span id="phone-resend-timer" style="font-size:0.78rem; color:#64748b; margin-left:6px;"></span>
+                </div>
+              </div>
+              <button type="button" id="send-phone-otp-btn" style="margin-top: 8px; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg,#6366f1,#8b5cf6); border: none; color: #fff; cursor: pointer; transition: all 0.2s;">Send OTP</button>
               <div class="error-message" id="error-contact-phone">
                 Please enter a valid phone number (10 to 15 digits, digits only, optional '+' prefix).
               </div>
             </div>
           </div>
 
-          <!-- Email -->
+          <!-- Email with OTP Verification -->
           <div class="form-group" id="group-email">
             <label for="contact-email" class="form-label">
               Corporate Email <span class="required-indicator">*</span>
@@ -206,7 +219,20 @@
               >
               <span id="email-status-icon" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: none;"></span>
             </div>
-            <button type="button" id="verify-email-btn" style="margin-top: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; border-radius: 4px; background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; cursor: pointer; transition: all 0.2s; align-self: flex-start;">Verify Email</button>
+            <!-- Send Email OTP Button -->
+            <button type="button" id="send-email-otp-btn" style="margin-top: 8px; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg,#6366f1,#8b5cf6); border: none; color: #fff; cursor: pointer; transition: all 0.2s;">Send Email OTP</button>
+            <!-- Email OTP Row (hidden until OTP is sent) -->
+            <div id="email-otp-row" style="display:none; margin-top:8px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="text" id="email-otp-input" maxlength="6" placeholder="Enter 6-digit OTP" style="flex:1; padding:8px 12px; border-radius:8px; background:#1e293b; border:1px solid #334155; color:#e2e8f0; font-size:0.9rem; letter-spacing:4px; font-family:monospace;">
+                <button type="button" id="verify-email-otp-btn" style="padding:8px 14px; font-size:0.8rem; font-weight:600; border-radius:8px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; color:#fff; cursor:pointer; white-space:nowrap;">Verify OTP</button>
+              </div>
+              <div id="email-otp-status" style="font-size:0.8rem; margin-top:5px;"></div>
+              <div style="margin-top:6px;">
+                <button type="button" id="resend-email-otp-btn" style="font-size:0.78rem; background:none; border:none; color:#6366f1; cursor:pointer; text-decoration:underline;">Resend OTP</button>
+                <span id="email-resend-timer" style="font-size:0.78rem; color:#64748b; margin-left:6px;"></span>
+              </div>
+            </div>
             <div class="error-message" id="error-contact-email">
               Please enter a valid corporate email address.
             </div>
@@ -432,6 +458,13 @@
       <p>© 2026 Arkoo Prebuild. All technical schematics & industrial design processes are proprietary trademarks.</p>
     </footer>
   </main>
+
+  <!-- Firebase Compat App & Auth SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <!-- Firebase reCAPTCHA container for Phone Auth verification -->
+  <div id="recaptcha-container" style="margin-top: 10px;"></div>
 
   <script src="app.js"></script>
 </body>

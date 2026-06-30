@@ -511,8 +511,8 @@ const handleArkooLead = async (req: any, res: any) => {
       });
       console.log("Email sent successfully:", info.messageId);
 
-      // Trigger email dispatch to the Customer with the Detailed PIF Form Link (Only if NOT from Landing Page)
-      if (!isLandingLead) {
+      // Send customer email with pre-filled PIF form link for ALL leads that have an email address
+      if (emailAddress) {
         customerPreviewUrl = await sendCustomerEmail(
           customerName, 
           emailAddress, 
@@ -561,9 +561,15 @@ const handleArkooLead = async (req: any, res: any) => {
         const previewUrl = nodemailer.getTestMessageUrl(info);
         console.log("Verification Email Sent! View here:", previewUrl);
 
-        // Trigger Ethereal fallback for Customer email (Only if NOT from Landing Page)
-        if (!isLandingLead) {
-          customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, phoneNumber, leadId ? leadId.toString() : ledgerEntry.id, detectBaseUrl(req));
+        // Fallback: send customer email for ALL leads that have an email address
+        if (emailAddress) {
+          customerPreviewUrl = await sendCustomerEmail(customerName, emailAddress, phoneNumber, leadId ? leadId.toString() : ledgerEntry.id, detectBaseUrl(req), {
+            projectlocation: projectLocation,
+            projecttype: projectType,
+            proposedarea: projectAreaSqft,
+            estimatedbudget: estimatedBudget,
+            completiontimeline: completionTimeline
+          });
 
           if (leadId) {
             await db.update(leadsTable).set({ status: "Form Pending" }).where(eq(leadsTable.id, leadId));
