@@ -200,8 +200,8 @@ router.post("/email/send", async (req, res) => {
     console.log(`[OTP] ✅ Email OTP sent to ${email}`);
     return res.status(200).json({ success: true, message: "OTP sent successfully. Please check your inbox." });
   } catch (error: any) {
-    console.error("[OTP] ❌ Failed to send email OTP:", error.message);
-    return res.status(500).json({ success: false, error: "Failed to send OTP. Please try again." });
+    console.error("[OTP] ❌ Failed to send email OTP:", error.message, error.code, error.response);
+    return res.status(500).json({ success: false, error: `Email delivery failed: ${error.message}` });
   }
 });
 
