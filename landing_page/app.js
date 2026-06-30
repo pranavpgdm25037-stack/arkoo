@@ -31,6 +31,13 @@ document.addEventListener('DOMContentLoaded', () => {
   updateProgressMeter();
 
   // ============================================================
+  // API BASE URL RESOLVER (FOR NETLIFY CROSS-ORIGIN FETCH)
+  // ============================================================
+  const API_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+    ? ''
+    : 'https://arkoo-u8sx.onrender.com';
+
+  // ============================================================
   // FIREBASE CLIENT INITIALIZATION (FOR PHONE OTP)
   // ============================================================
   let auth = null;
@@ -39,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function initFirebase() {
     try {
-      const res = await fetch('/api/otp/config');
+      const res = await fetch(API_BASE + '/api/otp/config');
       const config = await res.json();
       if (!config.apiKey) {
         console.warn("Firebase App API Key is missing. Falling back to Mock Phone OTP.");
@@ -214,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (errorContactEmail) errorContactEmail.style.display = 'none';
 
     try {
-      const res = await fetch('/api/otp/email/send', {
+      const res = await fetch(API_BASE + '/api/otp/email/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -259,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const res = await fetch('/api/otp/email/verify', {
+      const res = await fetch(API_BASE + '/api/otp/email/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp })
@@ -372,6 +379,17 @@ document.addEventListener('DOMContentLoaded', () => {
         phoneResendTimer = startResendCountdown(phoneResendTimerEl, resendPhoneOtpBtn, 60);
       } catch (err) {
         console.error("Firebase Phone OTP failed, falling back:", err);
+        
+        // Show specific error messages for developers to debug domains
+        if (err.code === 'auth/unauthorized-domain') {
+          setOtpStatus(phoneOtpStatus, '⚠️ Domain Unauthorized: Add ' + window.location.hostname + ' to Firebase Auth Authorized Domains.', 'error');
+          if (sendPhoneOtpBtn) {
+            sendPhoneOtpBtn.textContent = 'Send OTP';
+            sendPhoneOtpBtn.disabled = false;
+          }
+          return;
+        }
+
         // Reset recaptcha
         if (window.grecaptcha && recaptchaVerifier) {
           recaptchaVerifier.clear();
@@ -386,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fallbackSendPhoneOtp(phone) {
     try {
-      const res = await fetch('/api/otp/phone/send', {
+      const res = await fetch(API_BASE + '/api/otp/phone/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone })
@@ -448,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       // Fallback backend validation
       try {
-        const res = await fetch('/api/otp/phone/verify', {
+        const res = await fetch(API_BASE + '/api/otp/phone/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone, otp })
@@ -644,7 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      const response = await fetch('/api/lms/leads/ingest', {
+      const response = await fetch(API_BASE + '/api/lms/leads/ingest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(payload)
