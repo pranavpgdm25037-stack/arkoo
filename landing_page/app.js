@@ -56,8 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
       auth = firebase.auth();
       auth.useDeviceLanguage();
 
-      // Create invisible ReCaptcha on the Send Phone OTP button
-      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('send-phone-otp-btn', {
+      // Create invisible ReCaptcha on the container
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
         'size': 'invisible',
         'callback': (response) => {
           // ReCaptcha completed successfully
@@ -389,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset recaptcha
         if (window.grecaptcha && recaptchaVerifier) {
           recaptchaVerifier.clear();
-          recaptchaVerifier = new firebase.auth.RecaptchaVerifier('send-phone-otp-btn', { 'size': 'invisible' });
+          recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
         }
         fallbackSendPhoneOtp(phone);
       }

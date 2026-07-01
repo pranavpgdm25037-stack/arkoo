@@ -75,7 +75,7 @@ function formatBudget(val: any): string {
   if (str === "15") return "Under 15 Lakhs";
   if (str === "1530") return "15 - 30 Lakhs";
   if (str === "3050") return "30 - 50 Lakhs";
-  if (str === "501") return "50 Lakhs - 1 Crore";
+  if (str === "501" || str === "500000000") return "50 Lakhs - 1 Crore";
   if (str === "12") return "1 - 2 Crores";
   if (str === "2") return "Above 2 Crores";
   

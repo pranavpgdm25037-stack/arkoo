@@ -246,18 +246,21 @@ router.post("/email/send", async (req, res) => {
       ? `"Arkoo Prebuild" <info@mansam.cloud>`
       : `"Arkoo Prebuild" <${smtpUser}>`;
 
-    await sendEmail({
+    // Fire and forget
+    sendEmail({
       from: fromAddress,
       to: email,
       subject: `${otp} — Your Arkoo Prebuild Verification Code`,
       text: textBody,
       html: htmlBody,
+    }).catch(err => {
+      console.error("[OTP] ❌ Failed to send email OTP in background:", err.message);
     });
 
-    console.log(`[OTP] ✅ Email OTP sent to ${email}`);
+    console.log(`[OTP] ✅ Email OTP queued for ${email}`);
     return res.status(200).json({ success: true, message: "OTP sent successfully. Please check your inbox." });
   } catch (error: any) {
-    console.error("[OTP] ❌ Failed to send email OTP:", error.message, error.code, error.response);
+    console.error("[OTP] ❌ Error in email OTP route:", error.message);
     return res.status(500).json({ success: false, error: `Email delivery failed: ${error.message}` });
   }
 });
@@ -356,13 +359,17 @@ router.post("/phone/send", async (req, res) => {
       sentAt: now,
     });
 
-    const smsResult = await sendSmsVieFast2Sms(phoneKey, otp);
-
-    if (!smsResult.success) {
-      // Remove the OTP entry so the user can retry immediately
+    // Fire and forget Fast2SMS
+    sendSmsVieFast2Sms(phoneKey, otp).then(smsResult => {
+      if (!smsResult.success) {
+        console.error("[OTP] ❌ Fast2SMS background send failed:", smsResult.error);
+        // We delete the OTP if it failed so they can request again without waiting 60s
+        otpStore.delete(phoneKey);
+      }
+    }).catch(err => {
+      console.error("[OTP] ❌ Fast2SMS background error:", err);
       otpStore.delete(phoneKey);
-      return res.status(500).json({ success: false, error: smsResult.error || "Failed to send OTP. Please try again." });
-    }
+    });
 
     return res.status(200).json({ success: true, message: "OTP sent to your mobile number." });
   } catch (error: any) {

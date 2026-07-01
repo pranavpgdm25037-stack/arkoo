@@ -1145,16 +1145,16 @@ export default function ApplyPage() {
                             <FileInput
                               id="fileArchitectural"
                               name="fileArchitectural"
-                              accept=".pdf,.png,.jpg,.jpeg"
-                              label="Architectural Drawings (PDF, Image)"
+                              accept=".pdf,.doc,.docx"
+                              label="Architectural Drawings (PDF, Word)"
                               onChange={handleFileChange}
                               file={form.fileArchitectural}
                             />
                             <FileInput
                               id="fileTender"
                               name="fileTender"
-                              accept=".pdf"
-                              label="Tender Drawings (PDF)"
+                              accept=".pdf,.doc,.docx"
+                              label="Tender Drawings (PDF, Word)"
                               onChange={handleFileChange}
                               file={form.fileTender}
                             />

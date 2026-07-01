@@ -33,7 +33,7 @@ function formatBudget(val: any): string {
   if (str === "15") return "Under 15 Lakhs";
   if (str === "1530") return "15 - 30 Lakhs";
   if (str === "3050") return "30 - 50 Lakhs";
-  if (str === "501") return "50 Lakhs - 1 Crore";
+  if (str === "501" || str === "500000000") return "50 Lakhs - 1 Crore";
   if (str === "12") return "1 - 2 Crores";
   if (str === "2") return "Above 2 Crores";
   
@@ -68,6 +68,35 @@ function ensureAbsoluteUrl(url: string) {
   return `https://${url}`;
 }
 
+function getRawFieldValue(customer: any, fieldName: string): any {
+  if (!customer || !customer.rawData) return undefined;
+  let data = customer.rawData;
+  if (typeof data === "string") {
+    try {
+      data = JSON.parse(data);
+    } catch (e) {
+      return undefined;
+    }
+  }
+  return data[fieldName];
+}
+
+function getRawBudget(customer: any) {
+  const rawDataValues = [
+    getRawFieldValue(customer, "estimatedBudget"),
+    getRawFieldValue(customer, "Estimated Budget"),
+    getRawFieldValue(customer, "estimatedbudget"),
+    getRawFieldValue(customer, "budget")
+  ];
+  const validRaw = rawDataValues.find(v => v !== undefined && v !== null && v !== "");
+  if (validRaw) return formatBudget(validRaw);
+  
+  const projBudget = customer.projects?.[0]?.budget;
+  if (projBudget && projBudget !== "0" && projBudget !== "-") return formatBudget(projBudget);
+  
+  return "N/A";
+}
+
 export default function Contacts() {
   const { data: customers, isLoading } = useListCustomers();
   const [search, setSearch] = useState("");
@@ -99,7 +128,7 @@ export default function Contacts() {
         new Date(customer.created_at).toLocaleDateString(),
         proj.type || "-",
         proj.area_sqft || proj.areaSqft || "-",
-        formatBudget(raw.estimatedBudget || raw['Estimated Budget'] || raw.estimatedbudget || raw.budget || proj.budget || "-"),
+        getRawBudget(customer),
         proj.timeline || "-",
         raw.landownership || "-",
         raw.govapprovals || "-",
@@ -224,7 +253,7 @@ export default function Contacts() {
                           </TableCell>
                           <TableCell className="text-muted-foreground">{customer.address || '-'}</TableCell>
                           <TableCell className="text-muted-foreground font-medium">
-                            {formatBudget(customer.rawData?.project?.budget || customer.rawData?.estimatedBudget || customer.rawData?.['Estimated Budget'] || customer.rawData?.estimatedbudget || customer.rawData?.budget || customer.projects?.[0]?.budget || '-')}
+                            {getRawBudget(customer)}
                           </TableCell>
                           <TableCell className="text-muted-foreground font-mono text-sm text-right">
                             {new Date(customer.created_at).toLocaleDateString()}
@@ -299,7 +328,7 @@ export default function Contacts() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground flex items-center gap-1"><IndianRupee className="w-3 h-3"/> Budget</p>
-                          <p className="font-medium text-emerald-700">{formatBudget(selectedCustomer.rawData?.project?.budget || selectedCustomer.rawData?.estimatedBudget || selectedCustomer.rawData?.['Estimated Budget'] || selectedCustomer.rawData?.estimatedbudget || selectedCustomer.rawData?.budget || proj.budget || 'N/A')}</p>
+                          <p className="font-medium text-emerald-700">{getRawBudget(selectedCustomer)}</p>
                         </div>
                         <div className="col-span-2">
                           <p className="text-sm text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3"/> Timeline</p>
@@ -321,19 +350,19 @@ export default function Contacts() {
                 <div className="bg-muted/30 p-4 rounded-lg grid grid-cols-1 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Land Ownership Status</p>
-                    <p className="font-medium">{selectedCustomer.rawData?.landownership || 'Not Specified'}</p>
+                    <p className="font-medium">{getRawFieldValue(selectedCustomer, 'landownership') || 'Not Specified'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Government Approvals</p>
-                    <p className="font-medium">{selectedCustomer.rawData?.govapprovals || 'Not Specified'}</p>
+                    <p className="font-medium">{getRawFieldValue(selectedCustomer, 'govapprovals') || 'Not Specified'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Architect Hired</p>
-                    <p className="font-medium">{selectedCustomer.rawData?.hiredarchitect || 'Not Specified'}</p>
+                    <p className="font-medium">{getRawFieldValue(selectedCustomer, 'hiredarchitect') || 'Not Specified'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Additional Requirements</p>
-                    <p className="font-medium whitespace-pre-wrap">{selectedCustomer.rawData?.requirements || selectedCustomer.rawData?.message || 'None'}</p>
+                    <p className="font-medium whitespace-pre-wrap">{getRawFieldValue(selectedCustomer, 'requirements') || getRawFieldValue(selectedCustomer, 'message') || 'None'}</p>
                   </div>
                 </div>
               </div>
@@ -344,8 +373,8 @@ export default function Contacts() {
                   <FileDown className="w-4 h-4 text-emerald-500" /> Uploaded Documents
                 </h3>
                 <div className="space-y-2">
-                  {selectedCustomer.rawData?.uploadedDocuments && Object.keys(selectedCustomer.rawData.uploadedDocuments).length > 0 ? (
-                    Object.entries(selectedCustomer.rawData.uploadedDocuments).map(([key, url]: [string, any]) => (
+                  {getRawFieldValue(selectedCustomer, 'uploadedDocuments') && Object.keys(getRawFieldValue(selectedCustomer, 'uploadedDocuments')).length > 0 ? (
+                    Object.entries(getRawFieldValue(selectedCustomer, 'uploadedDocuments')).map(([key, url]: [string, any]) => (
                       <div key={key} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
