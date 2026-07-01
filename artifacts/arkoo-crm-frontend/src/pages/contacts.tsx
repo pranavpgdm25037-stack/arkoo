@@ -130,9 +130,9 @@ export default function Contacts() {
         proj.area_sqft || proj.areaSqft || "-",
         getRawBudget(customer),
         proj.timeline || "-",
-        raw.landownership || "-",
-        raw.govapprovals || "-",
-        raw.hiredarchitect || "-",
+        raw.landownership || raw.landStatus || "-",
+        raw.govapprovals || raw.govtApprovals || "-",
+        raw.hiredarchitect || raw.hasArchitect || "-",
         raw.requirements || raw.message || "-"
       ];
     });
@@ -350,15 +350,24 @@ export default function Contacts() {
                 <div className="bg-muted/30 p-4 rounded-lg grid grid-cols-1 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Land Ownership Status</p>
-                    <p className="font-medium">{getRawFieldValue(selectedCustomer, 'landownership') || 'Not Specified'}</p>
+                    <p className="font-medium">{getRawFieldValue(selectedCustomer, 'landownership') || getRawFieldValue(selectedCustomer, 'landStatus') || 'Not Specified'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Government Approvals</p>
-                    <p className="font-medium">{getRawFieldValue(selectedCustomer, 'govapprovals') || 'Not Specified'}</p>
+                    <p className="font-medium">{getRawFieldValue(selectedCustomer, 'govapprovals') || getRawFieldValue(selectedCustomer, 'govtApprovals') || 'Not Specified'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Architect Hired</p>
-                    <p className="font-medium">{getRawFieldValue(selectedCustomer, 'hiredarchitect') || 'Not Specified'}</p>
+                    <div className="font-medium">
+                      {getRawFieldValue(selectedCustomer, 'hiredarchitect') || getRawFieldValue(selectedCustomer, 'hasArchitect') || 'Not Specified'}
+                      {(getRawFieldValue(selectedCustomer, 'architectName') || getRawFieldValue(selectedCustomer, 'architectContact')) && (
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {getRawFieldValue(selectedCustomer, 'architectName') && <span>{getRawFieldValue(selectedCustomer, 'architectName')}</span>}
+                          {getRawFieldValue(selectedCustomer, 'architectName') && getRawFieldValue(selectedCustomer, 'architectContact') && <span> • </span>}
+                          {getRawFieldValue(selectedCustomer, 'architectContact') && <span>{getRawFieldValue(selectedCustomer, 'architectContact')}</span>}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Additional Requirements</p>
