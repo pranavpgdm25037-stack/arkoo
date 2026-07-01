@@ -11,7 +11,6 @@ import pifRouter from "./pif";
 import analyzeDrawingRouter from "./analyze-drawing";
 import { emailValidationRouter } from "./email-validation";
 import bomRouter from "./bom";
-import contentRouter from "./content";
 import otpRouter from "./otp";
 
 const router: IRouter = Router();
@@ -29,6 +28,5 @@ router.use(analyzeDrawingRouter);
 router.use("/email", emailValidationRouter);
 router.use("/otp", otpRouter);    // Email & Phone OTP Verification
 router.use(bomRouter);
-router.use("/content", contentRouter);
 
 export default router;

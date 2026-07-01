@@ -14,7 +14,6 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/protected-route";
 import LandingPage from "@/pages/landing";
 import Integrations from "@/pages/integrations";
-import ContentStudio from "@/pages/content-studio";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,11 +56,7 @@ function Router() {
           <Integrations />
         </ProtectedRoute>
       </Route>
-      <Route path="/content-studio">
-        <ProtectedRoute>
-          <ContentStudio />
-        </ProtectedRoute>
-      </Route>
+
       <Route path="/leads/:id">
         <ProtectedRoute>
           <LeadDetail />

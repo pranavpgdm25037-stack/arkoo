@@ -65,12 +65,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 Integrations
               </div>
             </Link>
-            <Link href="/content-studio">
-              <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer premium-sidebar-link ${location.startsWith('/content-studio') ? 'premium-sidebar-link-active' : ''}`}>
-                <Sparkles className="w-4 h-4" />
-                Content Studio
-              </div>
-            </Link>
+
           </div>
 
           <div className="space-y-1.5 pt-2 border-t border-white/5">
