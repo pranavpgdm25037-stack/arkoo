@@ -1,0 +1,77 @@
+{
+  "users": [
+    {
+      "id": "mock-user-uuid-1111-2222",
+      "email": "arkooprebuildai@gmail.com",
+      "role": "admin",
+      "status": "active",
+      "createdAt": "2026-07-31T10:52:21.603Z",
+      "updatedAt": "2026-07-31T10:52:21.617Z"
+    }
+  ],
+  "leads": [
+    {
+      "id": 151,
+      "source": "Landing Page",
+      "rawData": {
+        "notes": "Prospect wants a PEB industrial warehouse for storage.",
+        "requirements": "Size: 100 x 50 ft. Clear height: 24 ft. Location: Pune. Budget: ₹15L. Additional Comments: Need it completed in 3 months."
+      },
+      "aiScore": 85,
+      "aiCategory": "HOT",
+      "status": "Form Filled",
+      "assignedToUserId": "mock-user-uuid-1111-2222",
+      "createdAt": "2026-07-31T09:52:21.617Z",
+      "updatedAt": "2026-07-31T10:52:21.617Z"
+    },
+    {
+      "id": 152,
+      "source": "Instagram",
+      "rawData": {
+        "notes": "Enquired about cold storage PEB construction.",
+        "requirements": "Location: Mumbai. Area: 12,000 sq ft."
+      },
+      "aiScore": 65,
+      "aiCategory": "WARM",
+      "status": "contacted",
+      "assignedToUserId": "mock-user-uuid-1111-2222",
+      "createdAt": "2026-07-31T08:52:21.617Z",
+      "updatedAt": "2026-07-31T10:52:21.617Z"
+    }
+  ],
+  "customers": [
+    {
+      "id": 101,
+      "leadId": 151,
+      "name": "Pranav Patel",
+      "contactInfo": "{\"email\":\"pranav@example.com\",\"phone\":\"+919876543210\"}",
+      "address": "Pune, Maharashtra"
+    },
+    {
+      "id": 102,
+      "leadId": 152,
+      "name": "Rajesh Sharma",
+      "contactInfo": "{\"email\":\"rajesh@example.com\",\"phone\":\"+919812345678\"}",
+      "address": "Mumbai, Maharashtra"
+    }
+  ],
+  "projects": [
+    {
+      "id": 201,
+      "customerId": 101,
+      "type": "PEB Warehouse",
+      "areaSqft": 5000,
+      "budget": "1500000",
+      "timeline": "1 - 3 months"
+    },
+    {
+      "id": 202,
+      "customerId": 102,
+      "type": "Cold Storage",
+      "areaSqft": 12000,
+      "budget": "4500000",
+      "timeline": "3 - 6 months"
+    }
+  ],
+  "quotations": []
+}
