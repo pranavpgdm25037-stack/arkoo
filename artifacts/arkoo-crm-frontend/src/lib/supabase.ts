@@ -107,14 +107,18 @@ export const supabase = new Proxy(realSupabase, {
             return async (...args: any[]) => {
               try {
                 const res = await target.auth.signInWithPassword(args[0]);
-                if (res.error && (res.error.message?.includes('fetch') || res.error.message?.includes('network'))) {
-                  console.warn('[Supabase Client] Real auth failed to fetch, falling back to Mock Auth.');
-                  return mockAuth.signInWithPassword(args[0]);
+                if (res.error) {
+                  const errMsg = String(res.error.message || res.error.name || "").toLowerCase();
+                  if (errMsg.includes("fetch") || errMsg.includes("network") || errMsg.includes("retryable")) {
+                    console.warn('[Supabase Client] Real auth failed with network/fetch error, falling back to Mock Auth:', res.error);
+                    return mockAuth.signInWithPassword(args[0]);
+                  }
                 }
                 return res;
               } catch (err: any) {
-                if (err.message?.includes('fetch') || err.message?.includes('Failed to fetch') || err.message?.includes('getaddrinfo')) {
-                  console.warn('[Supabase Client] Real auth threw fetch error, falling back to Mock Auth.');
+                const errMsg = String(err.message || err.name || "").toLowerCase();
+                if (errMsg.includes("fetch") || errMsg.includes("network") || errMsg.includes("retryable") || errMsg.includes("getaddrinfo")) {
+                  console.warn('[Supabase Client] Real auth threw network error, falling back to Mock Auth:', err);
                   return mockAuth.signInWithPassword(args[0]);
                 }
                 return { data: { user: null, session: null }, error: err };
