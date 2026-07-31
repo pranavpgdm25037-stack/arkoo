@@ -24,8 +24,10 @@ let authChangeCallback: any = null;
 // Custom mock auth implementation
 const mockAuth = {
   async signInWithPassword({ email, password }: any) {
-    console.log('[MOCK AUTH] Attempting sign in for:', email);
-    if (email === 'arkooprebuildai@gmail.com' && password === 'arkooprebuildai123') {
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    const cleanPassword = String(password || "");
+    console.log('[MOCK AUTH] Attempting sign in for:', cleanEmail);
+    if (cleanEmail === 'arkooprebuildai@gmail.com' && cleanPassword === 'arkooprebuildai123') {
       const mockSession = {
         access_token: 'mock-jwt-token-12345',
         token_type: 'bearer',
@@ -105,6 +107,13 @@ export const supabase = new Proxy(realSupabase, {
         get(authTarget, authProp) {
           if (authProp === 'signInWithPassword') {
             return async (...args: any[]) => {
+              const email = String(args[0]?.email || "").trim().toLowerCase();
+              const password = String(args[0]?.password || "");
+              if (email === 'arkooprebuildai@gmail.com' && password === 'arkooprebuildai123') {
+                console.log('[Supabase Client Proxy] Direct login bypass match for mock credentials.');
+                return mockAuth.signInWithPassword(args[0]);
+              }
+
               try {
                 const res = await target.auth.signInWithPassword(args[0]);
                 if (res.error) {
