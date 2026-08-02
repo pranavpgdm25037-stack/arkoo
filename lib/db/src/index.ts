@@ -377,10 +377,6 @@ async function runFallbackSql(sqlText: string, params: any[]) {
 // Global flag to track connection health
 const getDbMockFlag = () => {
   if ((globalThis as any).__useMockDb) return true;
-  if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes("lbvltsahxiavgvnzgqon")) {
-    (globalThis as any).__useMockDb = true;
-    return true;
-  }
   return false;
 };
 
