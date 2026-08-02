@@ -106,7 +106,7 @@ function getRawBudget(lead: any) {
 }
 
 export default function LandingLeads() {
-  const { data: leadsData, isLoading } = useListLandingLeads({ refetchInterval: 5000 });
+  const { data: leadsData, isLoading } = useListLandingLeads({ refetchInterval: 30000 });
   const leads = leadsData as any[] | undefined;
   const [search, setSearch] = useState("");
   const [selectedLead, setSelectedLead] = useState<any>(null);

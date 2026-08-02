@@ -61,9 +61,9 @@ export default function Dashboard() {
     ...(statusFilter !== "All" ? { status: statusFilter } : {})
   };
 
-  const { data: leadsData, isLoading: isLeadsLoading } = useListLeads(queryParams, { refetchInterval: 2000 });
+  const { data: leadsData, isLoading: isLeadsLoading } = useListLeads(queryParams, { refetchInterval: 30000 });
   const leads = leadsData as any[] | undefined;
-  const { data: stats, isLoading: isStatsLoading } = useGetLeadsStats({ refetchInterval: 2000 });
+  const { data: stats, isLoading: isStatsLoading } = useGetLeadsStats({ refetchInterval: 30000 });
 
   // Extract unique sources dynamically from leads list
   const uniqueSources = leads

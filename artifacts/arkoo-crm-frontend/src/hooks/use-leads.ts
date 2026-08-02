@@ -118,7 +118,7 @@ export function useGetLead(id: string, options?: any) {
       const data = await response.json();
       return mapLeadData(data);
     },
-    refetchInterval: 3000,
+    refetchInterval: 30000,
     ...options,
   });
 }

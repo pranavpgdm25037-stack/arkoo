@@ -44,14 +44,18 @@ document.addEventListener('DOMContentLoaded', () => {
   let recaptchaVerifier = null;
   let confirmationResult = null;
 
-  async function initFirebase() {
+  const FALLBACK_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDvfh08yW83OBRkIXN8ATU-BKoRbCzTH-I",
+    authDomain: "arkoo-prebuild.firebaseapp.com",
+    projectId: "arkoo-prebuild",
+    storageBucket: "arkoo-prebuild.firebasestorage.app",
+    messagingSenderId: "381727367407",
+    appId: "1:381727367407:web:c0a47d02ca0772b0d07b1a"
+  };
+
+  function setupFirebase(config) {
+    if (firebase.apps.length > 0) return;
     try {
-      const res = await fetch(API_BASE + '/api/otp/config');
-      const config = await res.json();
-      if (!config.apiKey) {
-        console.warn("Firebase App API Key is missing. Falling back to Mock Phone OTP.");
-        return;
-      }
       firebase.initializeApp(config);
       auth = firebase.auth();
       auth.useDeviceLanguage();
@@ -68,7 +72,22 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error("Firebase init failed: ", e);
     }
   }
-  initFirebase();
+
+  // Initialize synchronously with fallback config for instant page responsiveness (prevents cold-start delays)
+  setupFirebase(FALLBACK_FIREBASE_CONFIG);
+
+  async function fetchFirebaseConfig() {
+    try {
+      const res = await fetch(API_BASE + '/api/otp/config');
+      const config = await res.json();
+      if (config.apiKey && !auth) {
+        setupFirebase(config);
+      }
+    } catch (e) {
+      console.warn("Async Firebase config fetch fallback:", e);
+    }
+  }
+  fetchFirebaseConfig();
 
   // Handle Project Type 'Other' visibility
   const projectTypeSelect = document.getElementById('project-type');

@@ -21,7 +21,7 @@ app.listen(port, (err) => {
   // Render's free tier spins down services after 15 min of inactivity, showing
   // a "SERVICE WAKING UP" cold-start page to users. This loop pings the health
   // endpoint every 14 minutes to keep the server permanently awake at no cost.
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" || process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.PORT) {
     const RENDER_URL = process.env.RENDER_EXTERNAL_URL || `https://arkoo-u8sx.onrender.com`;
     const PING_INTERVAL_MS = 14 * 60 * 1000; // 14 minutes
 
