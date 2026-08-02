@@ -281,21 +281,94 @@ async function runFallbackSql(sqlText: string, params: any[]) {
   }
 
   // 7. Insert operations:
-  if (sqlText.includes('insert into "leads"')) {
-    const newLead = {
-      id: Math.max(...dbData.leads.map((l: any) => l.id), 0) + 1,
-      source: params[0] || 'Website',
-      status: 'new',
-      aiScore: 0,
-      aiCategory: 'PENDING',
-      rawData: params[1] || {},
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    dbData.leads.push(newLead);
-    saveMockDb(dbData);
-    console.log(`   [Interpreter Result] New Lead inserted: #${newLead.id}`);
-    return [newLead];
+  if (sqlText.includes('insert into')) {
+    const tableMatch = sqlText.match(/insert into "([^"]+)"/i);
+    if (tableMatch) {
+      const tableName = tableMatch[1];
+      const parts = sqlText.split(/values/i);
+      if (parts.length === 2) {
+        const colPart = parts[0];
+        const valPart = parts[1];
+        
+        const colStart = colPart.indexOf('(');
+        const colEnd = colPart.lastIndexOf(')');
+        const columns = colPart.substring(colStart + 1, colEnd).split(',').map(c => c.replace(/"/g, '').trim());
+        
+        const valBlock = valPart.split(/returning/i)[0].trim();
+        const valStart = valBlock.indexOf('(');
+        const valEnd = valBlock.lastIndexOf(')');
+        const values = valBlock.substring(valStart + 1, valEnd).split(',').map(v => v.trim());
+
+        const record: Record<string, any> = {};
+        columns.forEach((col, idx) => {
+          const valToken = values[idx];
+          if (valToken && valToken.startsWith('$')) {
+            const paramIdx = parseInt(valToken.slice(1), 10) - 1;
+            record[col] = params[paramIdx];
+          }
+        });
+
+        if (tableName === 'leads') {
+          const newLead = {
+            id: Math.max(...dbData.leads.map((l: any) => l.id), 0) + 1,
+            source: record.source || 'Website',
+            status: record.status || 'Form Pending',
+            aiScore: record.ai_score || 0,
+            aiCategory: record.ai_category || 'PENDING',
+            rawData: record.raw_data || {},
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          dbData.leads.push(newLead);
+          saveMockDb(dbData);
+          console.log(`   [Interpreter Result] New Lead inserted: #${newLead.id}`);
+          return [newLead];
+        } else if (tableName === 'customers') {
+          const newCustomer = {
+            id: Math.max(...dbData.customers.map((c: any) => c.id), 0) + 1,
+            leadId: record.lead_id,
+            name: record.name || 'Not Specified',
+            contactInfo: record.contact_info || '{}',
+            address: record.address || '',
+            createdAt: new Date().toISOString()
+          };
+          dbData.customers.push(newCustomer);
+          saveMockDb(dbData);
+          console.log(`   [Interpreter Result] New Customer inserted: #${newCustomer.id}`);
+          return [newCustomer];
+        } else if (tableName === 'projects') {
+          const newProject = {
+            id: Math.max(...dbData.projects.map((p: any) => p.id), 0) + 1,
+            customerId: record.customer_id,
+            type: record.type || 'PEB Structure',
+            areaSqft: record.area_sqft || 0,
+            budget: record.budget || '0',
+            timeline: record.timeline || '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          dbData.projects.push(newProject);
+          saveMockDb(dbData);
+          console.log(`   [Interpreter Result] New Project inserted: #${newProject.id}`);
+          return [newProject];
+        } else if (tableName === 'quotations') {
+          const newQuotation = {
+            id: Math.max(...(dbData.quotations || []).map((q: any) => q.id), 0) + 1,
+            projectId: record.project_id,
+            version: record.version || 1,
+            totalAmount: record.total_amount || '0',
+            pdfUrl: record.pdf_url || '',
+            status: record.status || 'draft',
+            createdAt: new Date().toISOString()
+          };
+          if (!dbData.quotations) dbData.quotations = [];
+          dbData.quotations.push(newQuotation);
+          saveMockDb(dbData);
+          console.log(`   [Interpreter Result] New Quotation inserted: #${newQuotation.id}`);
+          return [newQuotation];
+        }
+      }
+    }
   }
 
   return [];
