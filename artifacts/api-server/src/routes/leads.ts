@@ -386,4 +386,44 @@ router.delete("/leads/:id", async (req, res) => {
   }
 });
 
+// Fetch customers list with projects and leads info
+router.get("/customers", async (req, res) => {
+  try {
+    const customers = await db.select().from(customersTable);
+    const projects = await db.select().from(projectsTable);
+    const leads = await db.select({
+      id: leadsTable.id,
+      rawData: leadsTable.rawData
+    }).from(leadsTable);
+
+    const formattedCustomers = customers.map((c: any) => {
+      const customerProjects = projects.filter((p: any) => p.customerId === c.id);
+      const relatedLead = leads.find((l: any) => l.id === c.leadId);
+
+      return {
+        id: c.id,
+        name: c.name,
+        contact_info: c.contactInfo,
+        address: c.address,
+        created_at: c.createdAt || new Date().toISOString(),
+        lead_id: c.leadId,
+        projects: customerProjects.map((p: any) => ({
+          id: p.id,
+          customer_id: p.customerId,
+          type: p.type,
+          area_sqft: p.areaSqft,
+          budget: p.budget,
+          timeline: p.timeline
+        })),
+        rawData: relatedLead?.rawData || {}
+      };
+    });
+
+    return res.json(formattedCustomers);
+  } catch (error) {
+    console.error("Error fetching customers list:", error);
+    return res.status(500).json({ error: "Failed to fetch customers list" });
+  }
+});
+
 export default router;

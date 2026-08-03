@@ -37,6 +37,26 @@
       "assignedToUserId": "mock-user-uuid-1111-2222",
       "createdAt": "2026-07-31T08:52:21.617Z",
       "updatedAt": "2026-07-31T10:52:21.617Z"
+    },
+    {
+      "id": 153,
+      "source": "Website",
+      "status": "Form Pending",
+      "aiScore": 0,
+      "aiCategory": "PENDING",
+      "rawData": "{\"Customer Name\":\"Pranav ingale\",\"Phone Number\":\"8851597099\",\"Email Address\":\"pranav@gmail.com\",\"Customer Requirements\":\"PEB Warehouse in Pune\",\"source\":\"Website\",\"estimatedBudget\":\"0\"}",
+      "createdAt": "2026-08-02T09:37:42.464Z",
+      "updatedAt": "2026-08-02T09:37:44.702Z"
+    },
+    {
+      "id": 154,
+      "source": "Website",
+      "status": "Form Pending",
+      "aiScore": 0,
+      "aiCategory": "PENDING",
+      "rawData": "{\"Customer Name\":\"Pranav ingale\",\"Phone Number\":\"8851597099\",\"Email Address\":\"pranav@gmail.com\",\"Customer Requirements\":\"PEB Warehouse in Pune\",\"source\":\"Website\",\"estimatedBudget\":\"0\"}",
+      "createdAt": "2026-08-02T09:39:18.192Z",
+      "updatedAt": "2026-08-02T09:39:20.267Z"
     }
   ],
   "customers": [
@@ -53,6 +73,14 @@
       "name": "Rajesh Sharma",
       "contactInfo": "{\"email\":\"rajesh@example.com\",\"phone\":\"+919812345678\"}",
       "address": "Mumbai, Maharashtra"
+    },
+    {
+      "id": 103,
+      "leadId": 154,
+      "name": "Pranav ingale",
+      "contactInfo": "{\"phone\":\"8851597099\",\"email\":\"pranav@gmail.com\"}",
+      "address": "Pune",
+      "createdAt": "2026-08-02T09:39:18.198Z"
     }
   ],
   "projects": [
@@ -71,6 +99,16 @@
       "areaSqft": 12000,
       "budget": "4500000",
       "timeline": "3 - 6 months"
+    },
+    {
+      "id": 203,
+      "customerId": 103,
+      "type": "PEB Warehouse",
+      "areaSqft": 0,
+      "budget": "0",
+      "timeline": "Not Specified",
+      "createdAt": "2026-08-02T09:39:18.204Z",
+      "updatedAt": "2026-08-02T09:39:18.204Z"
     }
   ],
   "quotations": []

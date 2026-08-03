@@ -300,6 +300,36 @@ async function runFallbackSql(sqlText: string, params: any[]) {
     return campaigns;
   }
 
+  // 4b. Customers list query:
+  if (sqlText.includes('select') && sqlText.includes('from "customers"')) {
+    const customers = dbData.customers || [];
+    console.log(`   [Interpreter Result] Customers count:`, customers.length);
+    return customers.map((c: any) => ({
+      id: c.id,
+      leadId: c.leadId || null,
+      name: c.name || "",
+      contactInfo: c.contactInfo || "{}",
+      address: c.address || "",
+      createdAt: c.createdAt || new Date().toISOString()
+    }));
+  }
+
+  // 4c. Projects list query:
+  if (sqlText.includes('select') && sqlText.includes('from "projects"')) {
+    const projects = dbData.projects || [];
+    console.log(`   [Interpreter Result] Projects count:`, projects.length);
+    return projects.map((p: any) => ({
+      id: p.id,
+      customerId: p.customerId || null,
+      type: p.type || "",
+      areaSqft: p.areaSqft || 0,
+      budget: p.budget || "",
+      timeline: p.timeline || "",
+      createdAt: p.createdAt || new Date().toISOString(),
+      updatedAt: p.updatedAt || new Date().toISOString()
+    }));
+  }
+
   // 5. Update lead status/notes:
   // e.g. update "leads" set "status" = $1, "ai_category" = $2 ... where "leads"."id" = $3
   if (sqlText.includes('update "leads"')) {

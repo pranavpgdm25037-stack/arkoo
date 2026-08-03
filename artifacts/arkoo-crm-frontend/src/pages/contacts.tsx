@@ -102,7 +102,7 @@ export default function Contacts() {
   const [search, setSearch] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
 
-  const filteredCustomers = customers?.filter(c => 
+  const filteredCustomers = customers?.filter((c: any) => 
     c.name.toLowerCase().includes(search.toLowerCase()) || 
     c.email.toLowerCase().includes(search.toLowerCase())
   );
@@ -116,7 +116,7 @@ export default function Contacts() {
       "Land Ownership Status", "Government Approvals", "Architect Hired", "Additional Requirements"
     ];
     
-    const rows = filteredCustomers.map(customer => {
+    const rows = filteredCustomers.map((customer: any) => {
       const proj = customer.projects && customer.projects.length > 0 ? customer.projects[0] : {};
       const raw = customer.rawData || {};
       
@@ -137,7 +137,7 @@ export default function Contacts() {
       ];
     });
     
-    const csvContent = [headers.join(","), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const csvContent = [headers.join(","), ...rows.map((e: any) => e.map((val: any) => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     
@@ -228,7 +228,7 @@ export default function Contacts() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredCustomers?.map((customer) => (
+                      filteredCustomers?.map((customer: any) => (
                         <motion.tr 
                           key={customer.id} 
                           initial={{ opacity: 0, x: -10 }}

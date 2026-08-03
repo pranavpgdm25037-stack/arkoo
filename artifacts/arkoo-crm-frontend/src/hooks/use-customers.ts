@@ -28,34 +28,13 @@ export function useListCustomers() {
   return useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (customersError) {
-        console.error("Customers query error:", customersError);
-        throw customersError;
+      const response = await fetch('/api/customers');
+      if (!response.ok) {
+        throw new Error('Failed to fetch customers');
       }
+      const data = await response.json();
       
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*');
-        
-      if (projectsError) {
-        console.error("Projects query error:", projectsError);
-      }
-      
-      const { data: leadsData, error: leadsError } = await supabase
-        .from('leads')
-        .select('id, raw_data');
-        
-      if (leadsError) {
-        console.error("Leads query error:", leadsError);
-      }
-
-      // Parse JSON contact info and join
-      return (customersData || []).map(c => {
+      return data.map((c: any) => {
         let email = 'N/A';
         let phone = 'N/A';
         try {
@@ -69,9 +48,6 @@ export function useListCustomers() {
           }
         } catch (e) {}
         
-        const customerProjects = projectsData?.filter(p => p.customer_id === c.id) || [];
-        const relatedLead = leadsData?.find(l => l.id === c.lead_id);
-        
         return {
           id: c.id,
           name: c.name,
@@ -79,8 +55,8 @@ export function useListCustomers() {
           phone,
           address: c.address,
           created_at: c.created_at,
-          projects: customerProjects,
-          rawData: relatedLead?.raw_data || {}
+          projects: c.projects || [],
+          rawData: c.rawData || {}
         };
       });
     }

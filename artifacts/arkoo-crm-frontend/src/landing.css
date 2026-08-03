@@ -903,3 +903,58 @@
     display: none; /* Hide background metrics on mobile viewports */
   }
 }
+
+/* Premium PEB Construction Background Banner */
+.hero-header-banner-wrapper {
+  position: relative;
+  width: 100%;
+  background-image: url('/peb-bg.png');
+  background-size: cover;
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  padding: 4rem 1.25rem 6.5rem 1.25rem;
+  overflow: hidden;
+  z-index: 10;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.hero-header-banner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 41, 59, 0.65) 55%, #f8fafc 100%);
+  z-index: 1;
+}
+
+.hero-header-banner-content {
+  position: relative;
+  max-width: 880px;
+  margin: 0 auto;
+  z-index: 2;
+}
+
+.hero-header-banner-content .brand-main {
+  color: #ffffff !important;
+}
+
+.hero-header-banner-content .hero-title {
+  color: #ffffff !important;
+  text-shadow: 0 2px 5px rgba(15, 23, 42, 0.5);
+}
+
+.hero-header-banner-content .hero-subtitle {
+  color: #e2e8f0 !important;
+  text-shadow: 0 1px 3px rgba(15, 23, 42, 0.6);
+  font-weight: 500;
+  opacity: 0.95;
+}
+
+/* Overlapping clean card container */
+.form-only-container {
+  margin-top: -4.5rem !important;
+  padding-top: 0 !important;
+  z-index: 20 !important;
+  position: relative;
+}

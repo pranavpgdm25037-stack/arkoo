@@ -192,88 +192,25 @@ export default function LandingPage() {
       <div className="glow-sphere orange-glow"></div>
       <div className="glow-sphere blue-glow"></div>
 
-      <div className="network-nodes-bg">
-        <svg className="nodes-svg" viewBox="0 0 1200 800" fill="none" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M50 150 Q 200 80 450 220 T 800 150" stroke="rgba(255,255,255,0.06)" strokeWidth="1.2" fill="none" />
-          <path d="M950 120 Q 1100 280 1150 480" stroke="rgba(255,255,255,0.06)" strokeWidth="1.2" fill="none" />
-          <path d="M100 580 Q 250 620 400 520 T 700 680" stroke="rgba(255,255,255,0.06)" strokeWidth="1.2" fill="none" />
-          <path d="M800 680 Q 980 580 1120 620" stroke="rgba(255,255,255,0.06)" strokeWidth="1.2" fill="none" />
-          
-          <path d="M450 220 L 700 680" stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="3 3" fill="none" />
-          <path d="M800 150 L 950 120" stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="3 3" fill="none" />
-          
-          <circle cx="450" cy="220" r="4" className="pulse-node" />
-          <circle cx="800" cy="150" r="3" className="pulse-node-slow" />
-          <circle cx="950" cy="120" r="4" className="pulse-node" />
-          <circle cx="400" cy="520" r="3" className="pulse-node-slow" />
-          <circle cx="800" cy="680" r="4" className="pulse-node" />
-        </svg>
-        
-        <div className="tech-metric metric-top-left">
-          <span className="metric-dot amber"></span>
-          <div className="metric-info">
-            <span className="metric-name">PEB Engine</span>
-            <span className="metric-val">20.945</span>
-          </div>
-        </div>
-        
-        <div className="tech-metric metric-top-right">
-          <span className="metric-dot blue"></span>
-          <div className="metric-info">
-            <span className="metric-name">LMS Ingest</span>
-            <span className="metric-val">2.945</span>
-          </div>
-        </div>
-        
-        <div className="tech-metric metric-bottom-left">
-          <span className="metric-dot blue"></span>
-          <div className="metric-info">
-            <span className="metric-name">BIM Analysis</span>
-            <span className="metric-val">19.346</span>
-          </div>
-        </div>
-        
-        <div className="tech-metric metric-bottom-right">
-          <span className="metric-dot amber"></span>
-          <div className="metric-info">
-            <span className="metric-name">Telemetry</span>
-            <span className="metric-val">440</span>
-          </div>
-        </div>
+      <div className="hero-header-banner-wrapper">
+        <div className="hero-header-banner-overlay"></div>
+        <div className="hero-header-banner-content">
+          <header className="main-header" style={{ justifyContent: 'center' }}>
+            <div className="logo-area">
+              <img src="/logo.png" alt="Arkoo Logo" style={{ height: '52px', width: 'auto' }} />
+            </div>
+          </header>
 
-        <div className="light-beams">
-          <div className="beam beam-1"></div>
-          <div className="beam beam-2"></div>
-          <div className="beam beam-3"></div>
-          <div className="beam beam-4"></div>
+          <section className="hero-section">
+            <h1 className="hero-title">High-Performance Pre-Engineered Buildings</h1>
+            <p className="hero-subtitle">
+              Accelerate your industrial deployment. Submit your project requirements to receive a comprehensive PEB structural layout, feasibility assessment, and technical cost proposal from Arkoo Prebuild's engineering division.
+            </p>
+          </section>
         </div>
       </div>
 
-      <main className="page-container">
-        <header className="main-header">
-          <div className="logo-area">
-            <svg className="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="var(--color-amber)" />
-              <path d="M2 17L12 22L22 17" stroke="var(--color-amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M2 12L12 17L22 12" stroke="var(--color-slate-400)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <div className="brand-text">
-              <span className="brand-main">ARKOO</span>
-              <span className="brand-sub">PREBUILD</span>
-            </div>
-          </div>
-          <div className="header-badge">
-            <span className="badge-dot"></span>
-            <span className="badge-label">Enterprise Lead Ingestion V2</span>
-          </div>
-        </header>
-
-        <section className="hero-section">
-          <h1 className="hero-title">High-Performance Pre-Engineered Buildings</h1>
-          <p className="hero-subtitle">
-            Accelerate your industrial deployment. Submit your project requirements to receive a comprehensive PEB structural layout, feasibility assessment, and technical cost proposal from Arkoo Prebuild's engineering division.
-          </p>
-        </section>
+      <main className="page-container form-only-container">
 
         <article className="enquiry-card">
           <div className="card-header">
@@ -623,9 +560,7 @@ export default function LandingPage() {
           </form>
         </article>
 
-        <footer className="main-footer">
-          <p>© 2026 Arkoo Prebuild. All technical schematics & industrial design processes are proprietary trademarks.</p>
-        </footer>
+        <footer className="main-footer"></footer>
       </main>
     </div>
   );
