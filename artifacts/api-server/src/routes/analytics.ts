@@ -60,21 +60,33 @@ function normalizeLeadSource(raw: string): string {
 }
 
 // Helper to categorize lead status into Green / Yellow / Red colors
-function getStatusCategory(statusStr: string): 'incoming' | 'attended' | 'lost' {
+function getStatusCategory(statusStr: string, createdAtStr: string | Date): 'incoming' | 'attended' | 'lost' {
   if (!statusStr) return 'incoming';
   const s = statusStr.toLowerCase().trim();
-  // Incoming (Green): New, Form Pending, Form Filled, Converted
-  if (s === 'new' || s === 'form pending' || s === 'form filled' || s === 'converted') {
-    return 'incoming';
-  }
-  // Attended (Yellow): Contacted, Qualified
-  if (s === 'contacted' || s === 'qualified') {
+  
+  // Attended & Contacted (Yellow): Form Filled, Contacted, Qualified, Converted
+  if (s === 'form filled' || s === 'contacted' || s === 'qualified' || s === 'converted') {
     return 'attended';
   }
+  
   // Lost (Red): Lost
   if (s === 'lost') {
     return 'lost';
   }
+  
+  // Pending states (New, Form Pending): Check 36-hour rule
+  if (s === 'new' || s === 'form pending') {
+    const createdTime = new Date(createdAtStr).getTime();
+    const elapsedMs = Date.now() - createdTime;
+    const CUTOFF_MS = 36 * 60 * 60 * 1000; // 36 hours
+    
+    if (elapsedMs > CUTOFF_MS) {
+      return 'lost'; // Turns into Lost (Red) if more than 36 hours
+    } else {
+      return 'incoming'; // Incoming (Green) if within 36 hours
+    }
+  }
+  
   return 'incoming'; // default
 }
 
@@ -143,7 +155,7 @@ router.post("/analytics/leads-trend", async (req, res) => {
 
       const bucket = trendData.find(b => b.key === matchKey);
       if (bucket) {
-        const cat = getStatusCategory(lead.status);
+        const cat = getStatusCategory(lead.status, lead.createdAt);
         if (cat === 'incoming') bucket.incoming++;
         else if (cat === 'attended') bucket.attended++;
         else if (cat === 'lost') bucket.lost++;
@@ -189,16 +201,17 @@ router.get("/campaigns", async (req, res) => {
     const leads = await db.select({
       id: leadsTable.id,
       status: leadsTable.status,
-      campaignId: leadsTable.campaignId
+      campaignId: leadsTable.campaignId,
+      createdAt: leadsTable.createdAt
     }).from(leadsTable);
 
     // Enrich campaigns with lead counts
     const enrichedCampaigns = campaigns.map((c: any) => {
       const campLeads = leads.filter((l: any) => l.campaignId === c.id);
       
-      const incoming = campLeads.filter((l: any) => getStatusCategory(l.status) === 'incoming').length;
-      const attended = campLeads.filter((l: any) => getStatusCategory(l.status) === 'attended').length;
-      const lost = campLeads.filter((l: any) => getStatusCategory(l.status) === 'lost').length;
+      const incoming = campLeads.filter((l: any) => getStatusCategory(l.status, l.createdAt) === 'incoming').length;
+      const attended = campLeads.filter((l: any) => getStatusCategory(l.status, l.createdAt) === 'attended').length;
+      const lost = campLeads.filter((l: any) => getStatusCategory(l.status, l.createdAt) === 'lost').length;
 
       return {
         ...c,

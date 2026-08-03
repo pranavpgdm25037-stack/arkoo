@@ -75,7 +75,8 @@ export default function Analytics() {
       });
       if (!res.ok) throw new Error("Failed to fetch leads trend");
       return res.json();
-    }
+    },
+    refetchInterval: 5000
   });
 
   // 3. Fetch Campaigns Data
@@ -85,7 +86,8 @@ export default function Analytics() {
       const res = await fetch("/api/campaigns");
       if (!res.ok) throw new Error("Failed to fetch campaigns");
       return res.json() as Promise<any[]>;
-    }
+    },
+    refetchInterval: 5000
   });
 
   // 4. Create Campaign Mutation
