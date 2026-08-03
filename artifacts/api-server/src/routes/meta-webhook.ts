@@ -136,7 +136,7 @@ router.post("/webhooks/meta", async (req: Request, res: Response) => {
 // Helper endpoint: call this with a leadgen_id to fetch the full lead from Meta
 // Usage: GET /api/webhooks/meta/retrieve-lead?leadgen_id=XXX&access_token=YYY
 router.get("/webhooks/meta/retrieve-lead", async (req: Request, res: Response) => {
-  const { leadgen_id, access_token } = req.query as Record<string, string>;
+  const { leadgen_id, access_token, form_id, ad_id } = req.query as Record<string, string>;
 
   if (!leadgen_id || !access_token) {
     return res.status(400).json({
@@ -174,7 +174,10 @@ router.get("/webhooks/meta/retrieve-lead", async (req: Request, res: Response) =
       phoneNumber,
       requirements,
       metaLeadgenId: leadgen_id,
+      metaFormId: form_id || leadData.form_id || "",
+      metaAdId: ad_id || leadData.ad_id || "",
     };
+
 
     const ingestRes = await fetch(`https://arkoo-u8sx.onrender.com/api/webhooks/arkoo-lead`, {
       method: "POST",

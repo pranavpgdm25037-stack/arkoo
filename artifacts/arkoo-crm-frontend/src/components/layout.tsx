@@ -35,6 +35,12 @@ export function Layout({ children }: { children: ReactNode }) {
                 Dashboard
               </div>
             </Link>
+            <Link href="/analytics">
+              <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer premium-sidebar-link ${location === '/analytics' ? 'premium-sidebar-link-active' : ''}`}>
+                <TrendingUp className="w-4 h-4" />
+                Analytics
+              </div>
+            </Link>
             <Link href="/contacts">
               <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer premium-sidebar-link ${location === '/contacts' ? 'premium-sidebar-link-active' : ''}`}>
                 <Users className="w-4 h-4" />
@@ -109,6 +115,12 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${location === '/dashboard' ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}>
             <LayoutDashboard className="w-5 h-5" />
             <span className="text-[10px]">Dashboard</span>
+          </div>
+        </Link>
+        <Link href="/analytics">
+          <div className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${location === '/analytics' ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}>
+            <TrendingUp className="w-5 h-5" />
+            <span className="text-[10px]">Analytics</span>
           </div>
         </Link>
         <Link href="/contacts">

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import nodemailer from "nodemailer";
-import { db, leadsTable, customersTable, projectsTable } from "@workspace/db";
+import { db, leadsTable, customersTable, projectsTable, campaignsTable } from "@workspace/db";
 import { ilike, eq, desc } from "drizzle-orm";
 import { qualifyLead, type LeadInputData } from "../services/ai-qualification";
 import fs from "fs";
@@ -388,6 +388,27 @@ const handleArkooLead = async (req: any, res: any) => {
     const qualification = { score: 0, category: "PENDING" as any, reason: "Awaiting detailed specification form" };
     const qualStatus = "PENDING";
 
+    // Lookup matching campaigns by Form ID or Ad ID
+    const formIdVal = String(data.linkedInFormId || data.metaFormId || data.form_id || data.formId || "").trim();
+    const adIdVal = String(data.metaAdId || data.ad_id || data.adId || "").trim();
+
+    let matchedCampaignId: number | null = null;
+    if (formIdVal || adIdVal) {
+      try {
+        const campaigns = await db.select().from(campaignsTable);
+        const matched = campaigns.find((c: any) => 
+          c.targetId && 
+          (c.targetId.trim() === formIdVal || c.targetId.trim() === adIdVal)
+        );
+        if (matched) {
+          matchedCampaignId = matched.id;
+          console.log(`🎯 [CAMPAIGN MATCH] Linked lead to campaign "${matched.name}" (ID: ${matched.id})`);
+        }
+      } catch (err: any) {
+        console.error("Error looking up matching campaign for lead:", err.message);
+      }
+    }
+
     try {
       let duplicateFound = false;
 
@@ -435,6 +456,7 @@ const handleArkooLead = async (req: any, res: any) => {
       status: "Form Pending",
       formSubmitted: false,
       qualification: null,
+      campaignId: matchedCampaignId,
       timestamp: new Date().toISOString(),
       rawPayload: data,
     };
@@ -464,7 +486,8 @@ const handleArkooLead = async (req: any, res: any) => {
         rawData: JSON.parse(JSON.stringify(data)),
         aiScore: 0,
         aiCategory: "PENDING",
-        status: "Form Pending"
+        status: "Form Pending",
+        campaignId: matchedCampaignId
       }).returning();
 
       leadId = lead.id;

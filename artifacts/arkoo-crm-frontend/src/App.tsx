@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import LeadDetail from "@/pages/lead-detail";
+import Analytics from "@/pages/analytics";
 import Login from "@/pages/auth/login";
 import Contacts from "@/pages/contacts";
 import Settings from "@/pages/settings";
@@ -33,6 +34,11 @@ function Router() {
       <Route path="/dashboard">
         <ProtectedRoute>
           <Dashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/analytics">
+        <ProtectedRoute>
+          <Analytics />
         </ProtectedRoute>
       </Route>
       <Route path="/contacts">

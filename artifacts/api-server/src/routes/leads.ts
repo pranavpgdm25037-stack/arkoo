@@ -68,7 +68,7 @@ router.post("/leads", async (req, res) => {
     const results = await finalQuery;
 
     // Parse contact info JSON strings if necessary
-    const formattedResults = results.map(r => {
+    const formattedResults = results.map((r: any) => {
       let contact = r.contactInfo;
       try {
         if (typeof contact === 'string' && contact.startsWith('{')) {
@@ -115,7 +115,7 @@ router.get("/leads/landing", async (req, res) => {
     .where(ilike(leadsTable.source, "%landing%"))
     .orderBy(desc(leadsTable.createdAt));
 
-    const formattedResults = results.map(r => {
+    const formattedResults = results.map((r: any) => {
       let contact = r.contactInfo;
       try {
         if (typeof contact === 'string' && contact.startsWith('{')) {
@@ -172,7 +172,7 @@ router.get("/leads/landing/export", async (req, res) => {
     .where(ilike(leadsTable.source, "%landing%"))
     .orderBy(desc(leadsTable.createdAt));
 
-    const dataRows = results.map(r => {
+    const dataRows = results.map((r: any) => {
       let contact = r.contactInfo;
       try {
         if (typeof contact === 'string' && contact.startsWith('{')) {
@@ -357,12 +357,12 @@ router.delete("/leads/:id", async (req, res) => {
     // Manual cascade delete
     // Find associated customers
     const customers = await db.select({ id: customersTable.id }).from(customersTable).where(eq(customersTable.leadId, leadId));
-    const customerIds = customers.map(c => c.id);
+    const customerIds = customers.map((c: any) => c.id);
     
     if (customerIds.length > 0) {
       // Find associated projects
       const projects = await db.select({ id: projectsTable.id }).from(projectsTable).where(inArray(projectsTable.customerId, customerIds));
-      const projectIds = projects.map(p => p.id);
+      const projectIds = projects.map((p: any) => p.id);
       
       if (projectIds.length > 0) {
         // Delete quotations associated with these projects

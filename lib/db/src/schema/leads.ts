@@ -1,5 +1,6 @@
 import { pgTable, serial, timestamp, varchar, integer, jsonb, uuid } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
+import { campaignsTable } from "./campaigns";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -11,9 +12,11 @@ export const leadsTable = pgTable("leads", {
   aiCategory: varchar("ai_category", { length: 50 }), // HOT, WARM, COLD
   status: varchar("status", { length: 50 }).notNull().default("new"), // new, contacted, qualified
   assignedToUserId: uuid("assigned_to_user_id").references(() => usersTable.id),
+  campaignId: integer("campaign_id").references(() => campaignsTable.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export type InsertLead = typeof leadsTable.$inferInsert;
 export type Lead = typeof leadsTable.$inferSelect;
+

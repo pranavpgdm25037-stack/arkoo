@@ -29,6 +29,39 @@ const loadMockDb = () => {
     try {
       const data = JSON.parse(fs.readFileSync(FALLBACK_DB_PATH, "utf-8"));
       if (data && typeof data === 'object') {
+        let modified = false;
+        if (!data.campaigns) {
+          data.campaigns = [
+            {
+              id: 1,
+              name: "LinkedIn Summer Sale 2026",
+              platform: "LinkedIn",
+              status: "active",
+              targetId: "li-form-123",
+              budget: 50000,
+              spent: 12000,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            },
+            {
+              id: 2,
+              name: "Instagram Retail Promo",
+              platform: "Instagram",
+              status: "active",
+              targetId: "ig-ad-456",
+              budget: 30000,
+              spent: 15000,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          ];
+          if (data.leads && data.leads[0]) data.leads[0].campaignId = 1;
+          if (data.leads && data.leads[1]) data.leads[1].campaignId = 2;
+          modified = true;
+        }
+        if (modified) {
+          fs.writeFileSync(FALLBACK_DB_PATH, JSON.stringify(data, null, 2), "utf-8");
+        }
         return data;
       }
     } catch (e) {}
@@ -110,7 +143,31 @@ const loadMockDb = () => {
         timeline: "3 - 6 months"
       }
     ],
-    quotations: []
+    quotations: [],
+    campaigns: [
+      {
+        id: 1,
+        name: "LinkedIn Summer Sale 2026",
+        platform: "LinkedIn",
+        status: "active",
+        targetId: "li-form-123",
+        budget: 50000,
+        spent: 12000,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 2,
+        name: "Instagram Retail Promo",
+        platform: "Instagram",
+        status: "active",
+        targetId: "ig-ad-456",
+        budget: 30000,
+        spent: 15000,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ]
   };
   fs.writeFileSync(FALLBACK_DB_PATH, JSON.stringify(defaultData, null, 2), "utf-8");
   return defaultData;
@@ -221,7 +278,8 @@ async function runFallbackSql(sqlText: string, params: any[]) {
         budget: project.budget || "",
         areaSqft: project.areaSqft || 0,
         timeline: project.timeline || "",
-        rawData: lead.rawData
+        rawData: lead.rawData,
+        campaignId: lead.campaignId || null
       };
     });
 
@@ -233,6 +291,13 @@ async function runFallbackSql(sqlText: string, params: any[]) {
     results.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     console.log(`   [Interpreter Result] Leads count:`, results.length);
     return results;
+  }
+
+  // 4a. Campaigns list query:
+  if (sqlText.includes('select') && sqlText.includes('from "campaigns"')) {
+    const campaigns = dbData.campaigns || [];
+    console.log(`   [Interpreter Result] Campaigns count:`, campaigns.length);
+    return campaigns;
   }
 
   // 5. Update lead status/notes:
@@ -266,16 +331,25 @@ async function runFallbackSql(sqlText: string, params: any[]) {
 
   // 6. Delete operations:
   if (sqlText.includes('delete from')) {
-    const leadId = params[0];
-    if (leadId && sqlText.includes('leads')) {
-      dbData.leads = dbData.leads.filter((l: any) => l.id !== leadId);
-      const customer = dbData.customers.find((c: any) => c.leadId === leadId);
+    const idParam = params[0];
+    if (idParam && sqlText.includes('leads')) {
+      dbData.leads = dbData.leads.filter((l: any) => l.id !== idParam);
+      const customer = dbData.customers.find((c: any) => c.leadId === idParam);
       if (customer) {
         dbData.projects = dbData.projects.filter((p: any) => p.customerId !== customer.id);
         dbData.customers = dbData.customers.filter((c: any) => c.id !== customer.id);
       }
       saveMockDb(dbData);
-      console.log(`   [Interpreter Result] Lead #${leadId} deleted.`);
+      console.log(`   [Interpreter Result] Lead #${idParam} deleted.`);
+    } else if (idParam && sqlText.includes('campaigns')) {
+      dbData.campaigns = (dbData.campaigns || []).filter((c: any) => c.id !== idParam);
+      dbData.leads.forEach((l: any) => {
+        if (l.campaignId === idParam) {
+          l.campaignId = null;
+        }
+      });
+      saveMockDb(dbData);
+      console.log(`   [Interpreter Result] Campaign #${idParam} deleted.`);
     }
     return [{ affectedRows: 1 }];
   }
@@ -316,6 +390,7 @@ async function runFallbackSql(sqlText: string, params: any[]) {
             aiScore: record.ai_score || 0,
             aiCategory: record.ai_category || 'PENDING',
             rawData: record.raw_data || {},
+            campaignId: record.campaign_id || null,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           };
@@ -366,6 +441,23 @@ async function runFallbackSql(sqlText: string, params: any[]) {
           saveMockDb(dbData);
           console.log(`   [Interpreter Result] New Quotation inserted: #${newQuotation.id}`);
           return [newQuotation];
+        } else if (tableName === 'campaigns') {
+          const newCampaign = {
+            id: Math.max(...(dbData.campaigns || []).map((c: any) => c.id), 0) + 1,
+            name: record.name || 'Unnamed Campaign',
+            platform: record.platform || 'LinkedIn',
+            status: record.status || 'active',
+            targetId: record.target_id || '',
+            budget: record.budget || 0,
+            spent: record.spent || 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          if (!dbData.campaigns) dbData.campaigns = [];
+          dbData.campaigns.push(newCampaign);
+          saveMockDb(dbData);
+          console.log(`   [Interpreter Result] New Campaign inserted: #${newCampaign.id}`);
+          return [newCampaign];
         }
       }
     }
