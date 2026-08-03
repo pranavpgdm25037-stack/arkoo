@@ -390,7 +390,7 @@ export default function LeadDetail() {
                               )}
 
                               <a href={fullUrl} target={isDataUrl ? undefined : "_blank"} download={isDataUrl ? downloadName : undefined} rel="noreferrer" className="flex items-center justify-center w-full py-1.5 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors">
-                                <Download className="w-3 h-3 mr-1" /> Open / Download
+                                <Download className="w-3 h-3 mr-1" /> Download
                               </a>
                             </div>
                           );
