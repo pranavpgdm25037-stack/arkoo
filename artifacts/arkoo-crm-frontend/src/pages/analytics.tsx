@@ -36,7 +36,8 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  Brush
 } from "recharts";
 
 const containerVariants = {
@@ -378,6 +379,14 @@ export default function Analytics() {
                           strokeWidth={2.5} 
                           activeDot={{ r: 6 }} 
                           dot={{ r: 3 }}
+                        />
+                        <Brush 
+                          dataKey="label" 
+                          height={20} 
+                          stroke="#6366f1"
+                          fill="#f8fafc"
+                          startIndex={Math.max(0, trendData.length - (interval === "day" ? 30 : interval === "year" ? 5 : 12))}
+                          endIndex={trendData.length - 1}
                         />
                       </LineChart>
                     </ResponsiveContainer>

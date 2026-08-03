@@ -108,24 +108,24 @@ router.post("/analytics/leads-trend", async (req, res) => {
     const now = new Date();
 
     if (interval === "day") {
-      // Past 30 days
-      for (let i = 29; i >= 0; i--) {
+      // Past 90 days
+      for (let i = 89; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
         const dateStr = d.toISOString().slice(0, 10); // YYYY-MM-DD
         const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
         trendData.push({ key: dateStr, label, incoming: 0, attended: 0, lost: 0 });
       }
     } else if (interval === "year") {
-      // Past 5 years
+      // Past 10 years
       const currentYear = now.getFullYear();
-      for (let i = 4; i >= 0; i--) {
+      for (let i = 9; i >= 0; i--) {
         const year = currentYear - i;
         const key = String(year);
         trendData.push({ key, label: key, incoming: 0, attended: 0, lost: 0 });
       }
     } else {
-      // Past 12 months (default "month")
-      for (let i = 11; i >= 0; i--) {
+      // Past 24 months (default "month")
+      for (let i = 23; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; // YYYY-MM
         const label = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
