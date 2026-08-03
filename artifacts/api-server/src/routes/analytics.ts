@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, leadsTable, projectsTable, campaignsTable } from "@workspace/db";
+import { db, leadsTable, projectsTable, campaignsTable, customersTable } from "@workspace/db";
 import { sql, eq } from "drizzle-orm";
 
 const router = Router();
@@ -278,6 +278,77 @@ router.delete("/campaigns/:id", async (req, res) => {
   } catch (error) {
     console.error("Error deleting campaign:", error);
     return res.status(500).json({ error: "Failed to delete campaign" });
+  }
+});
+
+// Generate Test Lead for a Campaign
+router.post("/campaigns/:id/generate-test-lead", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const campaignId = parseInt(id, 10);
+
+    if (isNaN(campaignId)) {
+      return res.status(400).json({ error: "Invalid campaign ID" });
+    }
+
+    // 1. Get campaign details
+    const [campaign] = await db.select()
+      .from(campaignsTable)
+      .where(eq(campaignsTable.id, campaignId));
+
+    if (!campaign) {
+      return res.status(404).json({ error: "Campaign not found" });
+    }
+
+    // 2. Create a randomized demo lead
+    const names = [
+      "Alex Mercer", "Jordan Vance", "Morgan Finch", "Taylor Reed", 
+      "Casey Brooks", "Sam Vance", "Robin Cole", "Pat Hudson"
+    ];
+    const projects = [
+      "Warehouse Structure PEB", "Industrial Mezzanine", "Cold Storage PEB", "Factory Shed Expansion"
+    ];
+    
+    const randomName = names[Math.floor(Math.random() * names.length)];
+    const randomProject = projects[Math.floor(Math.random() * projects.length)];
+    const randomPhone = `+91 ${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+    const randomEmail = `${randomName.toLowerCase().replace(" ", ".")}@example.com`;
+
+    const [newLead] = await db.insert(leadsTable).values({
+      source: campaign.platform,
+      campaignId: campaign.id,
+      status: "New", // Green incoming
+      rawData: {
+        form_id: campaign.targetId || undefined,
+        ad_id: campaign.targetId || undefined,
+        requirements: `Simulated lead from ad campaign "${campaign.name}". Interested in: ${randomProject}.`
+      }
+    }).returning();
+
+    // 3. Since leads need a customer record to show in CRM tables, we also insert a customer record
+    const [customer] = await db.insert(customersTable).values({
+      leadId: newLead.id,
+      name: randomName,
+      contactInfo: JSON.stringify({ phone: randomPhone, email: randomEmail }),
+      address: "Simulated Ad Location"
+    }).returning();
+
+    // 4. Insert a project record as well
+    await db.insert(projectsTable).values({
+      customerId: customer.id,
+      type: randomProject,
+      status: "lead",
+      budget: String(Math.floor(250000 + Math.random() * 500000)),
+      areaSqft: String(Math.floor(5000 + Math.random() * 15000)),
+      timeline: "3 Months"
+    });
+
+    console.log(`🎯 [TEST LEAD GENERATED] Created test lead for campaign "${campaign.name}"`);
+
+    return res.json({ success: true, lead: newLead, customer });
+  } catch (error) {
+    console.error("Error generating test lead:", error);
+    return res.status(500).json({ error: "Failed to generate test lead" });
   }
 });
 

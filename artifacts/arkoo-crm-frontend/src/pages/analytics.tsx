@@ -141,6 +141,32 @@ export default function Analytics() {
     }
   });
 
+  // 6. Generate Test Lead Mutation
+  const generateTestLeadMutation = useMutation({
+    mutationFn: async (campaignId: number) => {
+      const res = await fetch(`/api/campaigns/${campaignId}/generate-test-lead`, {
+        method: "POST"
+      });
+      if (!res.ok) throw new Error("Failed to generate test lead");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["leads-trend"] });
+      toast({
+        title: "Test Lead Generated",
+        description: "Created a demo lead mapped to this campaign successfully! The chart will refresh automatically.",
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Generation Failed",
+        description: err.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleCreateCampaign = (e: React.FormEvent) => {
     e.preventDefault();
     if (!campaignName || !campaignPlatform) {
@@ -618,18 +644,30 @@ export default function Analytics() {
                                     {c.platform === "LinkedIn" ? <Linkedin className="w-3.5 h-3.5 mr-1 fill-current" /> : <Instagram className="w-3.5 h-3.5 mr-1" />}
                                     {c.platform}
                                   </Badge>
-                                  <Button 
-                                    onClick={() => {
-                                      if (confirm(`Are you sure you want to delete campaign "${c.name}"?`)) {
-                                        deleteCampaignMutation.mutate(c.id);
-                                      }
-                                    }}
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
+                                  <div className="flex items-center gap-1.5">
+                                    <Button
+                                      onClick={() => generateTestLeadMutation.mutate(c.id)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 px-2 text-[10px] text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 border-indigo-100 hover:bg-indigo-50 cursor-pointer"
+                                      disabled={generateTestLeadMutation.isPending}
+                                    >
+                                      <PlusCircle className="w-3.5 h-3.5 mr-1" />
+                                      Demo Lead
+                                    </Button>
+                                    <Button 
+                                      onClick={() => {
+                                        if (confirm(`Are you sure you want to delete campaign "${c.name}"?`)) {
+                                          deleteCampaignMutation.mutate(c.id);
+                                        }
+                                      }}
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
                                 </div>
                                 <h3 className="font-bold text-base text-foreground mb-1 leading-snug">{c.name}</h3>
                                 <p className="text-[11px] text-muted-foreground mb-4">Form/Ad ID: <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[10px]">{c.targetId || "N/A"}</code></p>
