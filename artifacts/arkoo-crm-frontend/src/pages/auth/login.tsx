@@ -59,45 +59,56 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-4">
-      <Card className="w-full max-w-md">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{
+        backgroundImage: "url('/peb-bg.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Dark overlay for contrast */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-slate-900/65 to-slate-950/85 z-0" />
+
+      <Card className="w-full max-w-md relative z-10 bg-white/95 border border-white/95 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden p-2">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
             <img src="/logo.png" alt="Arkoo Logo" className="h-12 w-auto object-contain" />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">Arkoo LMS Login</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">Arkoo LMS Login</CardTitle>
+          <CardDescription className="text-slate-500">
             Enter your credentials to access the platform
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-slate-700 font-semibold">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="m@example.com"
                 {...form.register('email')}
-                className={form.formState.errors.email ? "border-red-500" : ""}
+                className={form.formState.errors.email ? "border-red-500" : "border-slate-200 focus:border-amber-500"}
               />
               {form.formState.errors.email && (
                 <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-slate-700 font-semibold">Password</Label>
               <Input
                 id="password"
                 type="password"
                 {...form.register('password')}
-                className={form.formState.errors.password ? "border-red-500" : ""}
+                className={form.formState.errors.password ? "border-red-500" : "border-slate-200 focus:border-amber-500"}
               />
               {form.formState.errors.password && (
                 <p className="text-sm text-red-500">{form.formState.errors.password.message}</p>
               )}
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
