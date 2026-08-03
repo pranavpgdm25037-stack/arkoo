@@ -73,11 +73,11 @@ export default function Integrations() {
                         {copied === "linkedin" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                       </Button>
                     </div>
-                    <a href="https://www.linkedin.com/company/arkoo-infra-trade-pvt-ltd/" target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 cursor-pointer">
+                    <Button asChild variant="outline" size="sm" className="w-full text-xs gap-1.5 cursor-pointer">
+                      <a href="https://www.linkedin.com/company/arkoo-infra-trade-pvt-ltd/" target="_blank" rel="noopener noreferrer">
                         <Globe className="w-3 h-3" /> View LinkedIn Page
-                      </Button>
-                    </a>
+                      </a>
+                    </Button>
                   </div>
                 </div>
 
@@ -101,11 +101,11 @@ export default function Integrations() {
                         {copied === "instagram" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                       </Button>
                     </div>
-                    <a href="https://www.instagram.com/arkooprebuild?igsh=MXQ4MnY3dHl1ODAxNg==" target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 cursor-pointer">
+                    <Button asChild variant="outline" size="sm" className="w-full text-xs gap-1.5 cursor-pointer">
+                      <a href="https://www.instagram.com/arkooprebuild?igsh=MXQ4MnY3dHl1ODAxNg==" target="_blank" rel="noopener noreferrer">
                         <Globe className="w-3 h-3" /> View Instagram Profile
-                      </Button>
-                    </a>
+                      </a>
+                    </Button>
                   </div>
                 </div>
 
@@ -129,11 +129,11 @@ export default function Integrations() {
                         {copied === "website" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                       </Button>
                     </div>
-                    <a href="https://www.arkooprebuild.com/" target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 cursor-pointer">
+                    <Button asChild variant="outline" size="sm" className="w-full text-xs gap-1.5 cursor-pointer">
+                      <a href="https://www.arkooprebuild.com/" target="_blank" rel="noopener noreferrer">
                         <Globe className="w-3 h-3" /> Go to Website
-                      </Button>
-                    </a>
+                      </a>
+                    </Button>
                   </div>
                 </div>
 
