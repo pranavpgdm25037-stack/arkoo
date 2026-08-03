@@ -317,7 +317,7 @@ router.post("/campaigns/:id/generate-test-lead", async (req, res) => {
     const [newLead] = await db.insert(leadsTable).values({
       source: campaign.platform,
       campaignId: campaign.id,
-      status: "New", // Green incoming
+      status: "Form Pending", // Orange incoming
       rawData: {
         form_id: campaign.targetId || undefined,
         ad_id: campaign.targetId || undefined,

@@ -110,7 +110,7 @@ export default function Dashboard() {
         lead.phone || "N/A",
         String(lead.ai_score || 0),
         lead.ai_label || "N/A",
-        lead.status || "New",
+        lead.status || "Form Pending",
         lead.source || "N/A",
         new Date(lead.created_at).toLocaleDateString()
       ]);
@@ -286,7 +286,6 @@ export default function Dashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All Statuses</SelectItem>
-                <SelectItem value="New">New</SelectItem>
                 <SelectItem value="Form Pending">Form Pending</SelectItem>
                 <SelectItem value="Form Filled">Form Filled</SelectItem>
                 <SelectItem value="Contacted">Contacted</SelectItem>

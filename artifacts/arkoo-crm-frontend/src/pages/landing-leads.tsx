@@ -461,7 +461,7 @@ export default function LandingLeads() {
                   <div>
                     <p className="text-xs text-muted-foreground">Ingestion Sync Status</p>
                     <div className="mt-1">
-                      <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 border-emerald-200">{selectedLead.status || "Form Pending"}</Badge>
+                      <Badge className={selectedLead.status === "Form Filled" ? "bg-purple-100 text-purple-600 border-purple-200" : "bg-orange-100 text-orange-600 border-orange-200"}>{selectedLead.status || "Form Pending"}</Badge>
                     </div>
                   </div>
                 </div>

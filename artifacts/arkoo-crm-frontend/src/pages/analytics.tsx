@@ -368,6 +368,8 @@ export default function Analytics() {
                           tickLine={false} 
                           axisLine={{ stroke: '#ccc', strokeWidth: 0.5 }} 
                           tick={{ fill: '#888', fontSize: 11 }}
+                          domain={[0, 'auto']}
+                          padding={{ bottom: 12, top: 12 }}
                         />
                         <Tooltip 
                           contentStyle={{ 

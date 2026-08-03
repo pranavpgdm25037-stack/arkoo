@@ -35,7 +35,7 @@ router.post("/webhooks/ingest", async (req, res) => {
         rawData: rawData,
         aiScore: qualification.score,
         aiCategory: qualification.category,
-        status: "New"
+        status: "Form Pending"
       }).returning();
 
       leadId = lead.id;

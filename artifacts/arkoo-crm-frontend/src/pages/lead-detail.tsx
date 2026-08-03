@@ -138,7 +138,7 @@ export default function LeadDetail() {
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{lead.name}</h1>
           </div>
           <div className="hidden sm:flex items-center gap-2">
-            {(lead.status === "New" || lead.status === "Form Pending") && (
+            {lead.status === "Form Pending" && (
               <Button 
                 variant="outline" 
                 className="bg-indigo-50 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-900 text-indigo-700 font-semibold"
