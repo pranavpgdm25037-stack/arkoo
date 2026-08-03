@@ -5,24 +5,62 @@ import * as XLSX from "xlsx";
 
 const router = Router();
 
+// Helper to calculate status based on 36-hour rule
+export function getLeadActiveStatus(status: string, createdAt: string | Date): string {
+  const s = (status || "").toLowerCase().trim();
+  if (s === 'new' || s === 'form pending') {
+    const createdTime = new Date(createdAt).getTime();
+    const elapsedMs = Date.now() - createdTime;
+    const CUTOFF_MS = 36 * 60 * 60 * 1000; // 36 hours
+    if (elapsedMs > CUTOFF_MS) {
+      return 'Lost';
+    }
+  }
+  return status;
+}
+
 // Stats calculation using real DB data
 router.post("/leads/stats", async (req, res) => {
   try {
-    const stats = await db.select({
-      total: sql<number>`count(*)`,
-      hot: sql<number>`count(*) filter (where ${leadsTable.aiCategory} = 'HOT')`,
-      warm: sql<number>`count(*) filter (where ${leadsTable.aiCategory} = 'WARM')`,
-      cold: sql<number>`count(*) filter (where ${leadsTable.aiCategory} = 'COLD')`,
-      avg_score: sql<number>`round(avg(${leadsTable.aiScore}))`,
+    const leads = await db.select({
+      id: leadsTable.id,
+      status: leadsTable.status,
+      aiCategory: leadsTable.aiCategory,
+      aiScore: leadsTable.aiScore,
+      createdAt: leadsTable.createdAt
     }).from(leadsTable);
 
-    const statusCounts = await db.select({
-      status: leadsTable.status,
-      count: sql<number>`count(*)`
-    }).from(leadsTable).groupBy(leadsTable.status);
+    let total = leads.length;
+    let hot = 0;
+    let warm = 0;
+    let cold = 0;
+    let totalScore = 0;
+
+    const statusCountsMap: Record<string, number> = {};
+
+    leads.forEach((l: any) => {
+      const activeStatus = getLeadActiveStatus(l.status, l.createdAt);
+      statusCountsMap[activeStatus] = (statusCountsMap[activeStatus] || 0) + 1;
+
+      const cat = (l.aiCategory || 'PENDING').toUpperCase();
+      if (cat === 'HOT') hot++;
+      else if (cat === 'WARM') warm++;
+      else if (cat === 'COLD') cold++;
+
+      totalScore += (l.aiScore || 0);
+    });
+
+    const statusCounts = Object.entries(statusCountsMap).map(([status, count]) => ({
+      status,
+      count
+    }));
 
     res.json({
-      ...stats[0],
+      total,
+      hot,
+      warm,
+      cold,
+      avg_score: total > 0 ? Math.round(totalScore / total) : 0,
       by_status: statusCounts
     });
   } catch (error) {
@@ -53,7 +91,6 @@ router.post("/leads", async (req, res) => {
     .leftJoin(projectsTable, eq(customersTable.id, projectsTable.customerId));
 
     const conditions = [];
-    if (status) conditions.push(ilike(leadsTable.status, status));
     if (label) conditions.push(eq(leadsTable.aiCategory, label.toUpperCase() as any));
     if (search) {
       conditions.push(
@@ -67,21 +104,32 @@ router.post("/leads", async (req, res) => {
 
     const results = await finalQuery;
 
-    // Parse contact info JSON strings if necessary
-    const formattedResults = results.map((r: any) => {
+    // Parse contact info JSON strings, apply 36-hour rule, and filter by status in JS
+    const formattedResults = [];
+    for (const r of results) {
       let contact = r.contactInfo;
       try {
         if (typeof contact === 'string' && contact.startsWith('{')) {
           contact = JSON.parse(contact);
         }
       } catch (e) {}
+
+      const activeStatus = getLeadActiveStatus(r.status, r.created_at);
       
-      return {
+      // Filter by status in JavaScript
+      if (status && status !== "All") {
+        if (activeStatus.toLowerCase() !== status.toLowerCase()) {
+          continue;
+        }
+      }
+
+      formattedResults.push({
         ...r,
-        phone: typeof contact === 'object' ? (contact as any).phone : contact,
-        email: typeof contact === 'object' ? (contact as any).email : ""
-      };
-    });
+        status: activeStatus,
+        phone: typeof contact === 'object' && contact ? (contact as any).phone : contact,
+        email: typeof contact === 'object' && contact ? (contact as any).email : ""
+      });
+    }
 
     res.json(formattedResults);
   } catch (error) {
@@ -132,10 +180,13 @@ router.get("/leads/landing", async (req, res) => {
         }
       }
 
+      const activeStatus = getLeadActiveStatus(r.status, r.created_at);
+
       return {
         ...r,
-        phone: typeof contact === 'object' ? (contact as any).phone : contact,
-        email: typeof contact === 'object' ? (contact as any).email : "",
+        status: activeStatus,
+        phone: typeof contact === 'object' && contact ? (contact as any).phone : contact,
+        email: typeof contact === 'object' && contact ? (contact as any).email : "",
         comments: comments
       };
     });
@@ -189,8 +240,9 @@ router.get("/leads/landing/export", async (req, res) => {
         }
       }
 
-      const phone = typeof contact === 'object' ? (contact as any).phone : contact;
-      const email = typeof contact === 'object' ? (contact as any).email : "";
+      const activeStatus = getLeadActiveStatus(r.status, r.created_at);
+      const phone = typeof contact === 'object' && contact ? (contact as any).phone : contact;
+      const email = typeof contact === 'object' && contact ? (contact as any).email : "";
 
       return {
         "Submission ID": r.id,
@@ -204,7 +256,7 @@ router.get("/leads/landing/export", async (req, res) => {
         "Completion Timeline": r.timeline || "N/A",
         "AI Score": r.ai_score || 0,
         "AI Category": r.ai_label || "PENDING",
-        "Status": r.status || "Form Pending",
+        "Status": activeStatus || "Form Pending",
         "Comments": comments || "N/A",
         "Date Submitted": r.created_at ? new Date(r.created_at).toLocaleString() : "N/A"
       };
@@ -300,6 +352,7 @@ router.get("/leads/:id", async (req, res) => {
 
     const formattedResult = {
       ...result,
+      status: getLeadActiveStatus(result.status, result.created_at),
       phone: phone || "N/A",
       email: email || "N/A",
       notes: notesText,
